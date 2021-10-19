@@ -69,31 +69,12 @@ namespace SpbAiChamp.Bots.Raund1
             int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Game.MyIndex ? group.Number : -group.Number);
             if (workerCount <= 0) return;
 
-            // Reserve building
-            if (planet.Building.HasValue)
-                workerCount -= Game.BuildingProperties[planet.Building.Value.BuildingType].MaxWorkers;
-            if (workerCount <= 0) return;
-
             // Reserve resources
-            int resCount = planet.Resources.Values.Sum();
-            int count = Math.Min(workerCount, resCount);
-            Supplier supplier = null;
+            foreach (var resource in planet.Resources)
+                suppliers.Add(new Supplier(planet.Id, resource.Value, resource.Key));
 
-            if (count > 0) // has resources
-            {
-                foreach (var resource in planet.Resources)
-                {
-                    int number = resource.Value * count / resCount;
-                    if (number > 0) suppliers.Add(supplier = new Supplier(planet.Id, number, resource.Key));
-                    workerCount -= number;
-                }
-                if (workerCount > 0)
-                    if (supplier == null)
-                        suppliers.Add(new Supplier(planet.Id, workerCount, planet.Resources.Last().Key));
-                    else supplier.Number += workerCount;
-            }
-            else // Reserve free workers
-                suppliers.Add(new Supplier(planet.Id, workerCount));
+            // Reserve workers
+            suppliers.Add(new Supplier(planet.Id, workerCount));
         }
 
         private List<Consumer> GetConsumers()
@@ -122,12 +103,12 @@ namespace SpbAiChamp.Bots.Raund1
 
         private void AddConsumer(List<Consumer> consumers, Planet planet)
         {
-            int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Game.MyIndex ? group.Number : -group.Number);
+            int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Game.MyIndex ? 0 : group.Number);
 
             // Add building
             if (planet.Building.HasValue)
             {
-                workerCount -= Game.BuildingProperties[planet.Building.Value.BuildingType].MaxWorkers;  // for workers needs                
+                workerCount += Game.BuildingProperties[planet.Building.Value.BuildingType].MaxWorkers;  // for workers needs                
 
                 foreach (var resource in Game.BuildingProperties[planet.Building.Value.BuildingType].WorkResources)
                     consumers.Add(AddOrder(planet, resource.Key, resource.Value));
@@ -141,24 +122,25 @@ namespace SpbAiChamp.Bots.Raund1
                     if (building.Value.Harvest && (!planet.HarvestableResource.HasValue || planet.HarvestableResource.Value != building.Value.ProduceResource.Value))
                         continue;
 
-                    foreach (var resource in building.Value.WorkResources)
+                    foreach (var resource in building.Value.BuildResources)
                         consumers.Add(new Consumer(planet.Id, resource.Value, resource.Key, building.Key));
 
                     // if need more workers, call more
-                    workerCount -= Math.Max(0, building.Value.MaxWorkers - building.Value.WorkResources.Values.Sum());
+                    workerCount += Math.Max(0, building.Value.MaxWorkers - building.Value.WorkResources.Values.Sum());
                 }
 
             // For reinforcement
             foreach (FlyingWorkerGroup flyingWorkerGroup in Game.FlyingWorkerGroups
                 .Where(group => group.PlayerIndex != Game.MyIndex   // enemy
                              && group.TargetPlanet == planet.Id))   // to this planet
-                workerCount -= flyingWorkerGroup.Number;
+                workerCount += flyingWorkerGroup.Number;
+
+            // Add worker for resources
+            workerCount += planet.Resources.Values.Sum();
 
             // Add needs for workers
-            workerCount -= planet.Resources.Values.Sum();
-
-            if (workerCount < 0)
-                consumers.Add(new Consumer(planet.Id, -workerCount));
+            if (workerCount > 0)
+                consumers.Add(new Consumer(planet.Id, workerCount));
         }
     }
 }
