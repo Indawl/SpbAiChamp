@@ -5,7 +5,7 @@ namespace SpbAiChamp.Bots.Raund1
     public class Partner
     {
         public int PlanetId { get; private set; }
-        public int Number { get; private set; }
+        public int Number { get; set; }
         public Resource? Resource { get; private set; }
         public int Delay { get; private set; }
         public bool IsDummy { get; private set; }
