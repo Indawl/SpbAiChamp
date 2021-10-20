@@ -10,5 +10,7 @@ namespace SpbAiChamp.Bots.Raund1
         {
             BuildingType = buildingType;
         }
+
+        public override string ToString() => base.ToString() + "; B: " + BuildingType;
     }
 }

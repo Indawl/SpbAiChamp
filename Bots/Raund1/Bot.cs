@@ -26,11 +26,11 @@ namespace SpbAiChamp.Bots.Raund1
             // Get Consumers
             List<Consumer> consumers = GetConsumers();
 
-            // Get transport card
-            TransportCard transportCard = new TransportCard(suppliers, consumers);
+            // Get transport map
+            TransportTask transportTask = new TransportTask(suppliers, consumers);
 
             // Get actions            
-            transportCard.GetActions(moveActions, buildingActions);
+            transportTask.GetActions(moveActions, buildingActions);
 
             // Return actions
             return new Action(moveActions.ToArray(), buildingActions.ToArray());

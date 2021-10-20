@@ -2,6 +2,8 @@
 {
     public class Auction
     {
+        public int SupplierId { get; }
+        public int ConsumerId { get; }
         public Supplier Supplier { get; }
         public Consumer Consumer { get; }
 
@@ -9,8 +11,13 @@
         public int Number { get; set; }
         public bool IsBase { get; set; } = false;
 
-        public Auction(Supplier supplier, Consumer consumer)
+        public int Delta { get; set; }
+
+        public Auction(int supplierId, int consumerId, Supplier supplier, Consumer consumer)
         {
+            SupplierId = supplierId;
+            ConsumerId = consumerId;
+
             Supplier = supplier;
             Consumer = consumer;
 

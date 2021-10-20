@@ -10,6 +10,8 @@ namespace SpbAiChamp.Bots.Raund1
         public int Delay { get; private set; }
         public bool IsDummy { get; private set; }
 
+        public int? Potential { get; set; }
+
         public Partner(int id, int number, Resource? resource = null, int delay = 0, bool isDummy = false)
         {
             PlanetId = id;
@@ -18,5 +20,7 @@ namespace SpbAiChamp.Bots.Raund1
             Delay = delay;
             IsDummy = isDummy;
         }
+
+        public override string ToString() => "Id: " + PlanetId +"; N: " + Number + "; R:" + Resource + "; T: " + Delay + "; D: " + IsDummy;
     }
 }
