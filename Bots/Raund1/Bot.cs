@@ -53,7 +53,7 @@ namespace SpbAiChamp.Bots.Raund1
 
         private void AddSuppliers(List<Supplier> suppliers, FlyingWorkerGroup flyingWorkerGroup)
         {
-            suppliers.Add(new Supplier(flyingWorkerGroup.TargetPlanet, flyingWorkerGroup.Number, flyingWorkerGroup.Resource, 
+            suppliers.Add(new Supplier(flyingWorkerGroup.TargetPlanet, flyingWorkerGroup.Number, flyingWorkerGroup.Resource,
                                        flyingWorkerGroup.NextPlanetArrivalTick - Game.CurrentTick));
 
             // Order complete
@@ -66,15 +66,14 @@ namespace SpbAiChamp.Bots.Raund1
 
         private void AddSuppliers(List<Supplier> suppliers, Planet planet)
         {
-            int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Game.MyIndex ? group.Number : -group.Number);
-            if (workerCount <= 0) return;
-
             // Reserve resources
             foreach (var resource in planet.Resources)
-                suppliers.Add(new Supplier(planet.Id, resource.Value, resource.Key));
+                suppliers.Add(new Supplier(planet, resource.Value, resource.Key));
 
             // Reserve workers
-            suppliers.Add(new Supplier(planet.Id, workerCount));
+            int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Game.MyIndex ? group.Number : -group.Number);
+            if (workerCount > 0)
+                suppliers.Add(new Supplier(planet, workerCount));
         }
 
         private List<Consumer> GetConsumers()
@@ -98,7 +97,7 @@ namespace SpbAiChamp.Bots.Raund1
             else
                 Orders[planet.Id][resource] = number;
 
-            return new Consumer(planet.Id, Orders[planet.Id][resource], resource, planet.Building.Value.BuildingType);
+            return new Consumer(planet, Orders[planet.Id][resource], resource, planet.Building.Value.BuildingType);
         }
 
         private void AddConsumer(List<Consumer> consumers, Planet planet)
@@ -123,7 +122,7 @@ namespace SpbAiChamp.Bots.Raund1
                         continue;
 
                     foreach (var resource in building.Value.BuildResources)
-                        consumers.Add(new Consumer(planet.Id, resource.Value, resource.Key, building.Key));
+                        consumers.Add(new Consumer(planet, resource.Value, resource.Key, building.Key));
 
                     // if need more workers, call more
                     workerCount += Math.Max(0, building.Value.MaxWorkers - building.Value.WorkResources.Values.Sum());
@@ -140,7 +139,7 @@ namespace SpbAiChamp.Bots.Raund1
 
             // Add needs for workers
             if (workerCount > 0)
-                consumers.Add(new Consumer(planet.Id, workerCount));
+                consumers.Add(new Consumer(planet, workerCount));
         }
     }
 }

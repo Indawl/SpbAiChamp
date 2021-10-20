@@ -23,52 +23,15 @@ namespace SpbAiChamp.Bots.Raund1
             // Create transport map
             CreateTransportMap();
 
-            // Unpack actions: to, from, resource, number[wihtout dummy, all]
-            //Dictionary<int, Dictionary<int, Dictionary<Resource, int[]>>> groups = new Dictionary<int, Dictionary<int, Dictionary<Resource, int[]>>>();
-
-            //for (int j = 0; j < Consumers.Count; j++)
-            //{
-            //    if (!groups.TryGetValue(Consumers[j].PlanetId, out var group_to))
-            //        group_to = new Dictionary<int, Dictionary<Resource, int[]>>();
-
-            //    for (int i = 0; i < Suppliers.Count; i++)
-            //        // Check is building action
-            //        if (!Consumers[j].IsDummy && !Suppliers[i].IsDummy && Consumers[j].BuildingType.HasValue)
-            //        {
-            //            buildingActions.Add(new BuildingAction(Consumers[j].PlanetId, Consumers[j].BuildingType.Value));
-            //            break;
-            //        }
-            //        else
-            //        {
-            //            if (!group_to.TryGetValue(Suppliers[i].PlanetId, out var group_from))
-            //                group_from = new Dictionary<Resource, int[]>();
-
-            //            if (!group_from.TryGetValue(Suppliers[i].Resource, out var group_res))
-            //                group_from = new Dictionary<Resource, int[]>();
-            //        }
-            //}
-
-
-            //    for (int i = 0; i < Suppliers.Count; i++)
-            //        // Dummy partner no need to use
-            //        if (!Auctions[i][j].Consumer.IsDummy && !Auctions[i][j].Supplier.IsDummy)
-            //            // Check is building action
-            //            if (Consumers[j].BuildingType.HasValue)
-            //            {
-            //                buildingActions.Add(new BuildingAction(Consumers[j].PlanetId, Consumers[j].BuildingType.Value));
-            //                break;
-            //            }
-            //            else // move action
-            //            {
-            //                if (Auctions[i][j].Number > 0)
-            //                {
-            //                    foreach (KeyValuePair<Resource, int> resource in Auctions[i][j].Price.Resources.Where(r => r.Value > 0))
-            //                        moveActions.Add(new MoveAction(Suppliers[i].PlanetId, Consumers[j].PlanetId,
-            //                                                       resource.Value, resource.Key));
-            //                }
-            //            }
-
-            //TO DO: union action for flying group
+            // Repack to actions
+            foreach (Auction auction in Auctions)
+                if (auction.IsBase && !auction.Supplier.IsDummy && !auction.Consumer.IsDummy)
+                    if (auction.Consumer.BuildingType.HasValue)
+                        buildingActions.Add(new BuildingAction(auction.Consumer.Planet.Id, auction.Consumer.BuildingType.Value));
+                    else if (auction.Supplier.Planet.Id != auction.Consumer.Planet.Id)
+                        moveActions.Add(new MoveAction(auction.Supplier.Planet.Id, auction.Consumer.Planet.Id, auction.Number,
+                            (!auction.Consumer.Resource.HasValue || !auction.Supplier.Resource.HasValue ||
+                             auction.Consumer.Resource.Value != auction.Supplier.Resource.Value) ? null : auction.Consumer.Resource));
         }
 
         private void CreateTransportMap()
@@ -87,7 +50,7 @@ namespace SpbAiChamp.Bots.Raund1
             {
                 Auction auction = CalculatePotencial();
                 if (auction == null || auction.Delta <= 0) break;
-                SwapLoop(auction);
+                if (!SwapLoop(auction)) break;
             }
         }
 
@@ -121,15 +84,15 @@ namespace SpbAiChamp.Bots.Raund1
             // Add dummy partners
             foreach (var resource in resources)
                 if (resource.Value > 0) // Suppliers more
-                    Consumers.Add(new Consumer(0, resource.Value, resource.Key, null, 0, true));
+                    Consumers.Add(new Consumer(Bot.Game.Planets[0], resource.Value, resource.Key, null, 0, true));
                 else if (resource.Value < 0) // Consumers more
-                    Suppliers.Add(new Supplier(0, -resource.Value, resource.Key, 0, true));
+                    Suppliers.Add(new Supplier(Bot.Game.Planets[0], -resource.Value, resource.Key, 0, true));
 
             // And workers
             if (number > 0) // Suppliers more
-                Consumers.Add(new Consumer(0, number, null, null, 0, true));
+                Consumers.Add(new Consumer(Bot.Game.Planets[0], number, null, null, 0, true));
             else if (number < 0) // Consumers more
-                Suppliers.Add(new Supplier(0, -number, null, 0, true));
+                Suppliers.Add(new Supplier(Bot.Game.Planets[0], -number, null, 0, true));
 
         }
 
@@ -190,17 +153,35 @@ namespace SpbAiChamp.Bots.Raund1
                 }
         }
 
-        private void SwapLoop(Auction auction)
+        private Auction GetSwapLoop(Auction auction)
         {
-            //for (int i = 0; i < Suppliers.Count - 1; i++)
-            //    for (int j = 0; j < Consumers.Count - 1; j++)
-            //        if (!Auctions[i][j].IsBase)
-            //            for (int ki = i + 1; ki < Suppliers.Count; ki++)
-            //                for (int kj = j + 1; kj < Consumers.Count; kj++)
-            //                    if (Auctions[i][kj].IsBase && Auctions[ki][j].IsBase)
-            //                    {
+            for (int i = 0; i < Suppliers.Count - 1; i++)
+                for (int j = 0; j < Consumers.Count - 1; j++)
+                    if (Auctions[i, auction.ConsumerId].IsBase && Auctions[auction.SupplierId, j].IsBase && Auctions[auction.SupplierId, auction.ConsumerId].IsBase)
+                        return Auctions[auction.SupplierId, auction.ConsumerId];
 
-            //                    }
+            return null;
+        }
+
+        private bool SwapLoop(Auction auction)
+        {
+            Auction swapAuction = GetSwapLoop(auction);
+            if (swapAuction == null) return false;
+
+            int number = Math.Min(Auctions[auction.SupplierId, swapAuction.ConsumerId].Number, Auctions[swapAuction.SupplierId, auction.ConsumerId].Number);
+            Auctions[auction.SupplierId, swapAuction.ConsumerId].Number -= number;
+            Auctions[swapAuction.SupplierId, auction.ConsumerId].Number -= number;
+            Auctions[swapAuction.SupplierId, swapAuction.ConsumerId].Number += number;
+            Auctions[auction.SupplierId, auction.ConsumerId].Number += number;
+
+            Auctions[auction.SupplierId, auction.ConsumerId].IsBase = true;
+
+            if (Auctions[auction.SupplierId, swapAuction.ConsumerId].Number == 0)
+                Auctions[auction.SupplierId, swapAuction.ConsumerId].IsBase = false;
+            else
+                Auctions[swapAuction.SupplierId, auction.ConsumerId].IsBase = false;
+
+            return true;
         }
 
         private Auction CalculatePotencial()
