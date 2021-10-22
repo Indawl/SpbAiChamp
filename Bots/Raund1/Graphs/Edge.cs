@@ -1,11 +1,11 @@
 ﻿namespace SpbAiChamp.Bots.Raund1.Graphs
 {
-    public class Edge<TNode>
+    public class Edge
     {
-        public TNode toNode;
+        public Node toNode;
         public int cost;
 
-        public Edge(TNode toNode, int cost = default)
+        public Edge(Node toNode, int cost = default)
         {
             this.cost = cost;
             this.toNode = toNode;

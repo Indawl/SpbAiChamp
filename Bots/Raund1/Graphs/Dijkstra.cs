@@ -29,7 +29,7 @@ namespace SpbAiChamp.Bots.Raund1.Graphs
                 for (int i = 0; i < neighbors.Count; i++)
                 {
                     neighbor = neighbors[i].toNode;
-                    var newCost = costAsFar[currentNode] + neighbors[i].cost;
+                    var newCost = costAsFar[currentNode] + GetCost(neighbors[i]);
 
                     if (!costAsFar.ContainsKey(neighbor) || newCost < costAsFar[neighbor])
                     {
@@ -42,12 +42,14 @@ namespace SpbAiChamp.Bots.Raund1.Graphs
             }
         }
 
-        public int GetNextPlanet(Node node)
+        protected virtual int GetCost(Edge edge) => edge.cost;
+
+        protected Node GetNextNode(Node node)
         {
             while (cameFrom[node] != null)
                 node = cameFrom[node];
 
-            return node.id;
+            return node;
         }
     }
 }

@@ -2,13 +2,13 @@
 {
     public class Shipping
     {
-        public Supplier Supplier { get; }
-        public Consumer Consumer { get; }
+        public Partner Supplier { get; }
+        public Partner Consumer { get; }
 
         public int Cost { get; private set; }
         public int Number { get; set; }        
 
-        public Shipping(Supplier supplier, Consumer consumer)
+        public Shipping(Partner supplier, Partner consumer)
         {
             Supplier = supplier;
             Consumer = consumer;
@@ -16,7 +16,7 @@
             Cost = CalculateCost(Supplier, Consumer);
         }
 
-        public int CalculateCost(Supplier supplier, Consumer consumer)
+        public int CalculateCost(Partner supplier, Partner consumer)
         {
             return 1;
         }

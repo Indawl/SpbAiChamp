@@ -18,9 +18,9 @@ namespace SpbAiChamp.Bots.Raund1.Contracts
             TickEnd = tickEnd;
         }
 
-        public void AddItem(Dictionary<Resource, int> resources, BuildingType? buildingType)
+        public void AddItem(Dictionary<Resource, int> resources, bool canDummy = true, BuildingType? buildingType = null)
         {
-            OrderItems.AddLast(new OrderItems(resources, buildingType));
+            OrderItems.AddLast(new OrderItems(resources, canDummy, buildingType));
         }
     }
 }

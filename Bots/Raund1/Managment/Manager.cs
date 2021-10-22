@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Contracts;
+using SpbAiChamp.Bots.Raund1.Graphs;
 
 namespace SpbAiChamp.Bots.Raund1.Managment
 {
@@ -9,17 +10,44 @@ namespace SpbAiChamp.Bots.Raund1.Managment
     {
         #region Static Attributes
         private static Manager[] manager = new Manager[2] { new Manager(), new Manager() };
-        public static Manager GetCurrentManager() => manager[0];
-        public static Manager GetLastManager() => manager[1];
+        public static Manager CurrentManager => manager[0];
+        public static Manager LastManager => manager[1];
         public static Manager GetNewManager()
         {
             manager[1] = manager[0];
             return manager[0] = new Manager();
-        }        
+        }
+        private static Graph graph = null;
         #endregion
 
         #region Game's attributes
         public Game Game { get; private set; }
+        #endregion
+
+        #region Graph's
+        public Graph Graph => graph == null ? graph = CreateGraph() : graph;
+        private Graph CreateGraph()
+        {
+            Graph graph = new Graph();
+
+            // Connect all planet with MaxTravelDistance
+            foreach (Planet fromPlanet in Game.Planets)
+            {
+                List<Edge> edges = new List<Edge>();
+
+                foreach (Planet toPlanet in Game.Planets)
+                {
+                    int dist = PlanetDetail.Distance(fromPlanet, toPlanet);
+
+                    if (dist <= Game.MaxTravelDistance)
+                        edges.Add(new Edge(new Node(toPlanet.Id), dist));
+                }
+
+                graph.edges.Add(new Node(fromPlanet.Id), edges);
+            }
+
+            return graph;
+        }
         #endregion
 
         #region Game's properties
@@ -27,8 +55,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Dictionary<int, PlanetDetail> PlanetDetails { get; private set; }
         public Dictionary<Resource, ResourceDetail> ResourceDetails { get; private set; }
         public Dictionary<BuildingType, BuildingDetail> BuildingDetails { get; private set; }
-        #endregion
-        
+        #endregion        
+
         public void SetGame(Game game)
         {
             // Game's attribute
