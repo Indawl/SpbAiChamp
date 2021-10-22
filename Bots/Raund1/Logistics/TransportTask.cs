@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SpbAiChamp.Model;
 
-namespace SpbAiChamp.Bots.Raund1
+namespace SpbAiChamp.Bots.Raund1.Logistics
 {
     public class TransportTask
     {

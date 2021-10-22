@@ -8,13 +8,10 @@ namespace SpbAiChamp.Bots.Raund1
 {
     public class Bot : IBot
     {
-        #region Game attributes
-        public static Game Game { get; private set; }
-        #endregion
-
         private Dictionary<int, Dictionary<Resource,int>> Orders { get; set; } = new Dictionary<int, Dictionary<Resource, int>>();
 
-        public void SetGame(Game game) => Game = game;
+        public void Initialize(Game game) => Manager.Initialize(game);
+        public void SetGame(Game game) => Manager.GetInstance().SetGame(game);
         public Action GetAction()
         {
             List<MoveAction> moveActions = new List<MoveAction>();
