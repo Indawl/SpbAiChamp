@@ -48,11 +48,11 @@ namespace SpbAiChamp.Bots.Raund1
             List<Supplier> suppliers = new List<Supplier>();
 
             // Analyze all planets
-            foreach (Planet planet in Game.Planets)
+            foreach (Planet planet in Manager.CurrentManager.Game.Planets)
                 AddSuppliers(suppliers, planet);
 
             // Analyze all flying work group
-            foreach (FlyingWorkerGroup flyingWorkerGroup in Game.FlyingWorkerGroups.Where(group => group.PlayerIndex == Game.MyIndex))
+            foreach (FlyingWorkerGroup flyingWorkerGroup in Manager.CurrentManager.Game.FlyingWorkerGroups)
                 AddSuppliers(suppliers, flyingWorkerGroup);
 
             return suppliers;
@@ -60,27 +60,18 @@ namespace SpbAiChamp.Bots.Raund1
 
         private void AddSuppliers(List<Supplier> suppliers, FlyingWorkerGroup flyingWorkerGroup)
         {
-            suppliers.Add(new Supplier(flyingWorkerGroup.TargetPlanet, flyingWorkerGroup.Number, flyingWorkerGroup.Resource,
-                                       flyingWorkerGroup.NextPlanetArrivalTick - Game.CurrentTick));
+            if (flyingWorkerGroup.PlayerIndex != Manager.CurrentManager.Game.MyIndex) return;
 
-            // Order complete
             if (flyingWorkerGroup.Resource.HasValue)
-                if (Orders.ContainsKey(flyingWorkerGroup.TargetPlanet))
-                    if (Orders[flyingWorkerGroup.TargetPlanet].ContainsKey(flyingWorkerGroup.Resource.Value))
-                        Orders[flyingWorkerGroup.TargetPlanet][flyingWorkerGroup.Resource.Value] = 
-                            Math.Max(0, Orders[flyingWorkerGroup.TargetPlanet][flyingWorkerGroup.Resource.Value] - flyingWorkerGroup.Number);
+                suppliers.Add(new WarehouseSupplier(flyingWorkerGroup.NextPlanet, flyingWorkerGroup.Number, flyingWorkerGroup.Resource,
+                                                    flyingWorkerGroup.NextPlanetArrivalTick - Manager.CurrentManager.Game.CurrentTick));
         }
 
         private void AddSuppliers(List<Supplier> suppliers, Planet planet)
         {
             // Reserve resources
             foreach (var resource in planet.Resources)
-                suppliers.Add(new Supplier(planet, resource.Value, resource.Key));
-
-            // Reserve workers
-            int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Game.MyIndex ? group.Number : -group.Number);
-            if (workerCount > 0)
-                suppliers.Add(new Supplier(planet, workerCount));
+                suppliers.Add(new WarehouseSupplier(planet.Id, resource.Value, resource.Key));
         }
 
         private List<Consumer> GetConsumers()
@@ -88,40 +79,50 @@ namespace SpbAiChamp.Bots.Raund1
             List<Consumer> consumers = new List<Consumer>();
 
             // Analyze all planets
-            foreach (Planet planet in Game.Planets)
+            foreach (Planet planet in Manager.CurrentManager.Game.Planets)
                 AddConsumer(consumers, planet);
+
+            // Analyze all flying work group
+            foreach (FlyingWorkerGroup flyingWorkerGroup in Manager.CurrentManager.Game.FlyingWorkerGroups)
+                AddSuppliers(consumers, flyingWorkerGroup);
 
             return consumers;
         }
 
-        private Consumer AddOrder(Planet planet, Resource resource, int number)
+        private void AddSuppliers(List<Consumer> consumers, FlyingWorkerGroup flyingWorkerGroup)
         {
-            if (!Orders.ContainsKey(planet.Id))
-                Orders[planet.Id] = new Dictionary<Resource, int>();
-
-            if (Orders[planet.Id].ContainsKey(resource))
-                Orders[planet.Id][resource] += number;
+            if (flyingWorkerGroup.PlayerIndex == Manager.CurrentManager.Game.MyIndex)
+                consumers.Add(new LaborConsumer(ConsumerType.Supplier, flyingWorkerGroup.NextPlanet, flyingWorkerGroup.Number, null,
+                                                                       flyingWorkerGroup.NextPlanetArrivalTick - Manager.CurrentManager.Game.CurrentTick));
             else
-                Orders[planet.Id][resource] = number;
-
-            return new Consumer(planet, Orders[planet.Id][resource], resource, planet.Building.Value.BuildingType);
+                consumers.Add(new EnemyConsumer(flyingWorkerGroup.NextPlanet, -flyingWorkerGroup.Number,
+                                                flyingWorkerGroup.NextPlanetArrivalTick - Manager.CurrentManager.Game.CurrentTick));
         }
 
         private void AddConsumer(List<Consumer> consumers, Planet planet)
         {
-            int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Game.MyIndex ? 0 : group.Number);
+            int workerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Manager.CurrentManager.Game.MyIndex ? -group.Number : group.Number);
+
+            // if is enemy plannet
+            if (workerCount < 0)
+            {
+                consumers.Add(new EnemyConsumer(planet.Id, workerCount));
+                return;
+            }
 
             // Add building
             if (planet.Building.HasValue)
             {
-                workerCount += Game.BuildingProperties[planet.Building.Value.BuildingType].MaxWorkers;  // for workers needs                
+                // need for work
+                consumers.Add(new LaborConsumer(ConsumerType.Consumer, planet.Id, -Manager.CurrentManager.Game.BuildingProperties[planet.Building.Value.BuildingType].MaxWorkers));
 
-                foreach (var resource in Game.BuildingProperties[planet.Building.Value.BuildingType].WorkResources)
-                    consumers.Add(AddOrder(planet, resource.Key, resource.Value));
+                // need for resource
+                foreach (var resource in Manager.CurrentManager.Game.BuildingProperties[planet.Building.Value.BuildingType].WorkResources)
+                    consumers.Add(new ResourceConsumer(planet.Id, -resource.Value, resource.Key));
             }
 
             // Add new buildng here
-            foreach (var building in Game.BuildingProperties)
+            foreach (var building in Manager.CurrentManager.Game.BuildingProperties)
                 if (!planet.Building.HasValue || planet.Building.Value.BuildingType != building.Key)
                 {
                     // If harvest, then only harvest
@@ -129,24 +130,13 @@ namespace SpbAiChamp.Bots.Raund1
                         continue;
 
                     foreach (var resource in building.Value.BuildResources)
-                        consumers.Add(new Consumer(planet, resource.Value, resource.Key, building.Key));
+                        consumers.Add(new BuildingConsumer(planet.Id, building.Key, -resource.Value, resource.Key));
 
                     // if need more workers, call more
-                    workerCount += Math.Max(0, building.Value.MaxWorkers - building.Value.WorkResources.Values.Sum());
+                    int count = building.Value.MaxWorkers - building.Value.WorkResources.Values.Sum();
+                    if (count > 0)
+                        consumers.Add(new LaborConsumer(ConsumerType.Consumer, planet.Id, -count));
                 }
-
-            // For reinforcement
-            foreach (FlyingWorkerGroup flyingWorkerGroup in Game.FlyingWorkerGroups
-                .Where(group => group.PlayerIndex != Game.MyIndex   // enemy
-                             && group.TargetPlanet == planet.Id))   // to this planet
-                workerCount += flyingWorkerGroup.Number;
-
-            // Add worker for resources
-            workerCount += planet.Resources.Values.Sum();
-
-            // Add needs for workers
-            if (workerCount > 0)
-                consumers.Add(new Consumer(planet, workerCount));
         }
     }
 }
