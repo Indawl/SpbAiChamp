@@ -55,8 +55,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Dictionary<int, PlanetDetail> PlanetDetails { get; private set; }
         public Dictionary<Resource, ResourceDetail> ResourceDetails { get; private set; }
         public Dictionary<BuildingType, BuildingDetail> BuildingDetails { get; private set; }
-
-        public int MaxCost { get; private set; } = 10000; // TO DO: fix value
         #endregion        
 
         public void SetGame(Game game)

@@ -1,4 +1,5 @@
-﻿using SpbAiChamp.Model;
+﻿using System.Collections.Generic;
+using SpbAiChamp.Model;
 
 namespace SpbAiChamp.Bots.Raund1.Partners
 {
@@ -14,6 +15,8 @@ namespace SpbAiChamp.Bots.Raund1.Partners
         {
             Type = type;
         }
+
+        public virtual void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
 
         public override string ToString() => Type.ToString() + ": " + base.ToString() + "; UV: " + Potential;
     }

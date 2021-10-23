@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using SpbAiChamp.Model;
-using SpbAiChamp.Bots.Raund1.Managment;
 using SpbAiChamp.Bots.Raund1.Partners;
 
 namespace SpbAiChamp.Bots.Raund1.Logistics
@@ -25,11 +24,9 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public void GetActions(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            ShippingPlans.Cast<ShippingPlan>().ToList().Sort((a, b) => a.Cost.CompareTo(b.Cost));
-
-            foreach (ShippingPlan shippingPlan in ShippingPlans)
-                if (!shippingPlan.Warehouse.IsDummy && shippingPlan.Number > 0 && shippingPlan.Cost < Manager.CurrentManager.MaxCost)
-                    shippingPlan.Partner.GetAction(shippingPlan.Warehouse, shippingPlan.Number, moveActions, buildingActions);
+            for (int i = 0; i < Suppliers.Count; i++)
+                for (int j = 0; j < Consumers.Count; j++)
+                    ShippingPlans[i, j].GetAction(moveActions, buildingActions);
         }
 
         private void CreateTransportMap()
