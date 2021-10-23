@@ -6,6 +6,5 @@ namespace SpbAiChamp.Bots
     {
         public Action GetAction();
         public void SetGame(Game game);
-        public void Initialize(Game game);
     }
 }

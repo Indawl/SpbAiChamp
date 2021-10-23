@@ -1,53 +1,58 @@
 namespace SpbAiChamp.Model
 {
     /// <summary>
-    /// TODO - Document
+    /// Building properties
     /// </summary>
     public struct BuildingProperties
     {
         /// <summary>
-        /// TODO - Document
+        /// Building type that this building can be upgraded from
+        /// </summary>
+        public Model.BuildingType? BaseBuilding { get; set; }
+        /// <summary>
+        /// Resources required for building
         /// </summary>
         public System.Collections.Generic.IDictionary<Model.Resource, int> BuildResources { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Max health points of the building
         /// </summary>
         public int MaxHealth { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Max number of workers in the building
         /// </summary>
         public int MaxWorkers { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Resources required to start another task
         /// </summary>
         public System.Collections.Generic.IDictionary<Model.Resource, int> WorkResources { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Whether performing a task spawn new workers
         /// </summary>
         public bool ProduceWorker { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Resource produced when performing a task
         /// </summary>
         public Model.Resource? ProduceResource { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Amount of resources/workers produced when performing one task
         /// </summary>
         public int ProduceAmount { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Score points given for performing one task
         /// </summary>
         public int ProduceScore { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Whether building is harvesting. In this case resource can only be produced if it is harvestable on the planet
         /// </summary>
         public bool Harvest { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Amount of work needed to finish one task
         /// </summary>
         public int WorkAmount { get; set; }
     
-        public BuildingProperties(System.Collections.Generic.IDictionary<Model.Resource, int> buildResources, int maxHealth, int maxWorkers, System.Collections.Generic.IDictionary<Model.Resource, int> workResources, bool produceWorker, Model.Resource? produceResource, int produceAmount, int produceScore, bool harvest, int workAmount)
+        public BuildingProperties(Model.BuildingType? baseBuilding, System.Collections.Generic.IDictionary<Model.Resource, int> buildResources, int maxHealth, int maxWorkers, System.Collections.Generic.IDictionary<Model.Resource, int> workResources, bool produceWorker, Model.Resource? produceResource, int produceAmount, int produceScore, bool harvest, int workAmount)
         {
+            this.BaseBuilding = baseBuilding;
             this.BuildResources = buildResources;
             this.MaxHealth = maxHealth;
             this.MaxWorkers = maxWorkers;
@@ -64,6 +69,13 @@ namespace SpbAiChamp.Model
         public static BuildingProperties ReadFrom(System.IO.BinaryReader reader)
         {
             var result = new BuildingProperties();
+            if (reader.ReadBoolean())
+            {
+                result.BaseBuilding = BuildingTypeHelper.ReadFrom(reader);
+            } else
+            {
+                result.BaseBuilding = null;
+            }
             int buildResourcesSize = reader.ReadInt32();
             result.BuildResources = new System.Collections.Generic.Dictionary<Model.Resource, int>(buildResourcesSize);
             for (int buildResourcesIndex = 0; buildResourcesIndex < buildResourcesSize; buildResourcesIndex++)
@@ -104,6 +116,14 @@ namespace SpbAiChamp.Model
         /// <summary> Write BuildingProperties to writer </summary>
         public void WriteTo(System.IO.BinaryWriter writer)
         {
+            if (!BaseBuilding.HasValue)
+            {
+                writer.Write(false);
+            } else
+            {
+                writer.Write(true);
+                writer.Write((int) (BaseBuilding.Value));
+            }
             writer.Write(BuildResources.Count);
             foreach (var buildResourcesEntry in BuildResources)
             {
@@ -140,6 +160,15 @@ namespace SpbAiChamp.Model
         /// <summary> Get string representation of BuildingProperties </summary>
         public override string ToString() {
             string stringResult = "BuildingProperties { ";
+            stringResult += "BaseBuilding: ";
+            if (!BaseBuilding.HasValue)
+            {
+                stringResult += "null";
+            } else
+            {
+                stringResult += BaseBuilding.Value.ToString();
+            }
+            stringResult += ", ";
             stringResult += "BuildResources: ";
             stringResult += "{ ";
             int buildResourcesIndex = 0;

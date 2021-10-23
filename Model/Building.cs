@@ -1,28 +1,33 @@
 namespace SpbAiChamp.Model
 {
     /// <summary>
-    /// TODO - Document
+    /// A building
     /// </summary>
     public struct Building
     {
         /// <summary>
-        /// TODO - Document
+        /// Building's type
         /// </summary>
         public Model.BuildingType BuildingType { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Current health
         /// </summary>
         public int Health { get; set; }
         /// <summary>
-        /// TODO - Document
+        /// Amount of work done for current task
         /// </summary>
         public int WorkDone { get; set; }
+        /// <summary>
+        /// Number of tasks finished since last tick
+        /// </summary>
+        public int LastTickTasksDone { get; set; }
     
-        public Building(Model.BuildingType buildingType, int health, int workDone)
+        public Building(Model.BuildingType buildingType, int health, int workDone, int lastTickTasksDone)
         {
             this.BuildingType = buildingType;
             this.Health = health;
             this.WorkDone = workDone;
+            this.LastTickTasksDone = lastTickTasksDone;
         }
     
         /// <summary> Read Building from reader </summary>
@@ -32,6 +37,7 @@ namespace SpbAiChamp.Model
             result.BuildingType = BuildingTypeHelper.ReadFrom(reader);
             result.Health = reader.ReadInt32();
             result.WorkDone = reader.ReadInt32();
+            result.LastTickTasksDone = reader.ReadInt32();
             return result;
         }
     
@@ -41,6 +47,7 @@ namespace SpbAiChamp.Model
             writer.Write((int) (BuildingType));
             writer.Write(Health);
             writer.Write(WorkDone);
+            writer.Write(LastTickTasksDone);
         }
     
         /// <summary> Get string representation of Building </summary>
@@ -54,6 +61,9 @@ namespace SpbAiChamp.Model
             stringResult += ", ";
             stringResult += "WorkDone: ";
             stringResult += WorkDone.ToString();
+            stringResult += ", ";
+            stringResult += "LastTickTasksDone: ";
+            stringResult += LastTickTasksDone.ToString();
             stringResult += " }";
             return stringResult;
         }

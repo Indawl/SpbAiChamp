@@ -8,9 +8,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
     {
         public const int PENALTY = 200;
 
-        public ShortestWay(Planet planet) : base(Manager.CurrentManager.Graph, planet.Id)
-        {
-        }
+        public ShortestWay(Planet planet) : base(Manager.CurrentManager.Graph, planet.Id) { }
 
         public int GetNextPlanet(int planetId) => GetNextNode(new Node(planetId)).id;
 

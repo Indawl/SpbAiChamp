@@ -1,16 +1,20 @@
 ﻿using SpbAiChamp.Model;
 
-namespace SpbAiChamp.Bots.Raund1
+namespace SpbAiChamp.Bots.Raund1.Partners
 {
     public class Consumer : Partner
     {
-        public BuildingType? BuildingType { get; private set; }
-        public Consumer(int planetId, int number, Resource? resource = null, BuildingType? buildingType = null, int delay = 0, bool isDummy = false) : 
-            base(planetId, number, resource, delay, isDummy)
+        public int? Potential { get; set; }
+        public int countBase { get; set; }
+
+        public ConsumerType Type { get; }
+
+        public Consumer(ConsumerType type, int planetId, int number, Resource? resource = null, int delay = 0) : 
+            base(planetId, number, resource, delay)
         {
-            BuildingType = buildingType;
+            Type = type;
         }
 
-        public override string ToString() => base.ToString() + "; B: " + BuildingType;
+        public override string ToString() => Type.ToString() + ": " + base.ToString() + "; UV: " + Potential;
     }
 }

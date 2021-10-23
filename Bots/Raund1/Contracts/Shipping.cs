@@ -1,24 +1,23 @@
-﻿namespace SpbAiChamp.Bots.Raund1.Contracts
+﻿using SpbAiChamp.Bots.Raund1.Partners;
+
+namespace SpbAiChamp.Bots.Raund1.Contracts
 {
     public class Shipping
     {
-        public Partner Supplier { get; }
-        public Partner Consumer { get; }
+        public Supplier Supplier { get; }
+        public Consumer Consumer { get; }
 
-        public int Cost { get; private set; }
-        public int Number { get; set; }        
+        public int Cost { get; private set; } = 0;
+        public int Number { get; set; } = 0;
 
-        public Shipping(Partner supplier, Partner consumer)
+        public Shipping(Supplier supplier, Consumer consumer)
         {
             Supplier = supplier;
             Consumer = consumer;
 
-            Cost = CalculateCost(Supplier, Consumer);
+            Cost = CalculateCost();
         }
 
-        public int CalculateCost(Partner supplier, Partner consumer)
-        {
-            return 1;
-        }
+        protected virtual int CalculateCost() => 1;
     }
 }
