@@ -30,8 +30,17 @@ namespace SpbAiChamp.Bots.Raund1
             // Get actions            
             transportTask.GetActions(moveActions, buildingActions);
 
+            // Grouping actions
+            var groupMoveActions = moveActions
+                .GroupBy(_ => new { _.StartPlanet, _.TargetPlanet, _.TakeResource })
+                .Select(_ => new MoveAction(_.Key.StartPlanet, _.Key.TargetPlanet, _.Sum(_ => _.WorkerNumber), _.Key.TakeResource)).ToArray();
+
+            var groupBuildingActions = buildingActions
+                .GroupBy(_ => new { _.Planet })
+                .Select(_ => new BuildingAction(_.Key.Planet, _.First().BuildingType)).ToArray();
+
             // Return actions
-            return new Action(moveActions.ToArray(), buildingActions.ToArray());
+            return new Action(groupMoveActions, groupBuildingActions, null);
         }
 
         private List<Supplier> GetSuppliers()

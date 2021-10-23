@@ -24,9 +24,9 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public void GetActions(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            for (int i = 0; i < Suppliers.Count; i++)
-                for (int j = 0; j < Consumers.Count; j++)
-                    ShippingPlans[i, j].GetAction(moveActions, buildingActions);
+            var shippingPlans = ShippingPlans.Cast<ShippingPlan>().ToList();
+            shippingPlans.Sort((a, b) => a.Cost.CompareTo(b.Cost));
+            shippingPlans.ForEach(_ => _.GetAction(moveActions, buildingActions));
         }
 
         private void CreateTransportMap()
