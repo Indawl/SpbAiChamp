@@ -8,16 +8,11 @@ namespace SpbAiChamp.Bots.Raund1.Partners
         public int? Potential { get; set; }
         public int countBase { get; set; }
 
-        public ConsumerType Type { get; }
-
-        public Consumer(ConsumerType type, int planetId, int number, Resource? resource = null, int delay = 0) : 
-            base(planetId, number, resource, delay)
+        public Consumer(int planetId, int number, Resource? resource = null, int delay = 0, bool isDummy = false) : 
+            base(planetId, number, resource, delay, isDummy)
         {
-            Type = type;
         }
 
         public virtual void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
-
-        public override string ToString() => Type.ToString() + ": " + base.ToString() + "; UV: " + Potential;
     }
 }

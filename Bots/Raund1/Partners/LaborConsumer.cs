@@ -1,12 +1,13 @@
-﻿using SpbAiChamp.Model;
-
-namespace SpbAiChamp.Bots.Raund1.Partners
+﻿namespace SpbAiChamp.Bots.Raund1.Partners
 {
     public class LaborConsumer : Consumer
     {
-        public LaborConsumer(ConsumerType type, int planetId, int number, Resource? resource = null, int delay = 0) : 
-            base(type, planetId, number, resource, delay)
+        public Supplier Supplier { get; }
+
+        public LaborConsumer(int planetId, int number, int delay = 0, Supplier supplier = null, bool isDummy = false) :
+            base(planetId, number, null, delay, isDummy)
         {
+            Supplier = supplier;
         }
     }
 }

@@ -3,7 +3,7 @@
     public class EnemyConsumer : Consumer
     {
         public EnemyConsumer(int planetId, int number, int delay = 0) : 
-            base(ConsumerType.Consumer, planetId, number, null, delay)
+            base(planetId, number, null, delay)
         {
         }
     }

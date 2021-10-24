@@ -9,18 +9,20 @@ namespace SpbAiChamp.Bots.Raund1.Contracts
         public int TickStart { get; }
         public int TickEnd { get; set; }
 
-        public LinkedList<OrderItems> OrderItems { get; } = new LinkedList<OrderItems>();
+        public Dictionary<Resource, int> Resources { get; set; }
+        public int Number { get; set; }
 
-        public Order(int planetId, int tickStart = 0, int tickEnd = 1000)
+        public BuildingType? BuildingType { get; set; }
+
+        public int Delay { get; set; }
+
+        public Order(int planetId, int tickStart = 0, int tickEnd = 1000, int delay = 0)
         {
             PlanetId = planetId;
             TickStart = tickStart;
             TickEnd = tickEnd;
-        }
 
-        public void AddItem(Dictionary<Resource, int> resources, bool canDummy = true, BuildingType? buildingType = null)
-        {
-            OrderItems.AddLast(new OrderItems(resources, canDummy, buildingType));
+            Delay = delay;
         }
     }
 }

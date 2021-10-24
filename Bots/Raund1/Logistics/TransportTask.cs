@@ -41,7 +41,8 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             CreateInitialPlan();
 
             // Find potencial
-            while (CalculatePotencial(out ShippingPlan shippingPlan) != 0)
+            for (int i = 0; i < 100 && CalculatePotencial(out ShippingPlan shippingPlan) != 0; i++)
+            //while (CalculatePotencial(out ShippingPlan shippingPlan) != 0)
                 if (!Redistribution(shippingPlan)) break;
             //TO DO: break infinity cycle
         }
@@ -100,7 +101,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                     if (ShippingPlans[i, j].Supplier.Number > 0 && ShippingPlans[i, j].Consumer.Number > 0)
                     {
                         ShippingPlans[i, j].IsBase = true;
-                        ShippingPlans[i, j].Number = Math.Min(Suppliers[j].Number, Consumers[j].Number);
+                        ShippingPlans[i, j].Number = Math.Min(Suppliers[i].Number, Consumers[j].Number);
 
                         ShippingPlans[i, j].Supplier.Number -= ShippingPlans[i, j].Number;
                         ShippingPlans[i, j].Consumer.Number -= ShippingPlans[i, j].Number;
@@ -128,7 +129,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                     if (ShippingPlans[i, j].Supplier.Number <= 0 && ShippingPlans[i, j].Consumer.Number < 0)
                     {
                         ShippingPlans[i, j].IsBase = true;
-                        ShippingPlans[i, j].Number = Math.Max(Suppliers[j].Number, Consumers[j].Number);
+                        ShippingPlans[i, j].Number = Math.Max(Suppliers[i].Number, Consumers[j].Number);
 
                         ShippingPlans[i, j].Supplier.Number -= ShippingPlans[i, j].Number;
                         ShippingPlans[i, j].Consumer.Number -= ShippingPlans[i, j].Number;
@@ -169,10 +170,10 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                         searching = true;
 
                 if (searching && !processing) // in right algoritm is inpossible?! but cycle is norm for me
-                    foreach (var supplier in Suppliers)
-                        if (!supplier.Potential.HasValue)
+                    foreach (var shippingPlan in shippingPlans)
+                        if (!shippingPlan.Supplier.Potential.HasValue)
                         {
-                            supplier.Potential = 0;
+                            shippingPlan.Supplier.Potential = 0;
                             break;
                         }
             }
@@ -193,7 +194,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             optimalPlan.IsBase = true;
 
             // Count how many base shipping in one row and column
-            Suppliers.ForEach(_ => _.countBase = 0);
+            Consumers.ForEach(_ => _.countBase = 0);
             Suppliers.ForEach(_ => _.countBase = 0);
 
             for (int i = 0; i < Suppliers.Count; i++)

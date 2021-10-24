@@ -8,8 +8,8 @@ namespace SpbAiChamp.Bots.Raund1.Partners
     {
         public BuildingType BuildingType { get; private set; }
 
-        public BuildingConsumer(int planetId, BuildingType buildingType, int number, Resource? resource = null, int delay = 0) :
-            base(ConsumerType.Consumer, planetId, number, resource, delay)
+        public BuildingConsumer(int planetId, BuildingType buildingType) :
+            base(planetId, 0, null, 0)
         {
             BuildingType = buildingType;
         }
