@@ -10,6 +10,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public ShortestWay(Planet planet) : base(Manager.CurrentManager.Graph, planet.Id) { }
 
+        public int GetDistance(int planetId) => costAsFar[new Node(planetId)];
         public int GetNextPlanet(int planetId) => GetNextNode(new Node(planetId)).id;
 
         protected override int GetCost(Edge edge)
