@@ -13,7 +13,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         public int SupplierId { get; }
         public int ConsumerId { get; }
 
-        public bool Possible { get; }
+        public bool Possible { get; } = true;
 
         public bool IsBase { get; set; } = false;
         public int Delta { get; set; } = 0;
@@ -27,6 +27,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             ConsumerId = consumerId;
 
             Possible = Supplier.CheckConsumer(Consumer);
+            Cost = CalculateCost();
         }
 
         public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
@@ -37,6 +38,6 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }
 
-        protected override int CalculateCost() => Possible ? (Supplier.CalculateCost(Consumer) + Consumer.CalculateCost(Supplier)) : int.MaxValue;
+        private int CalculateCost() => Possible ? (Supplier.CalculateCost(Consumer) + Consumer.CalculateCost(Supplier)) : int.MaxValue;
     }
 }
