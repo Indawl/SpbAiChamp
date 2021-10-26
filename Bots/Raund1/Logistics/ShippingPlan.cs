@@ -16,6 +16,8 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         public int Delta { get; set; } = 0;
         public int countBase { get; set; } = 0;
 
+        public int Sign { get; set; }
+
         public ShippingPlan(int supplierId, int consumerId, Supplier supplier, Consumer consumer) : base(supplier, consumer)
         {
             SupplierId = supplierId;
@@ -24,24 +26,12 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            if (Supplier.IsDummy || Consumer.IsDummy) return;
             if (!IsBase || Cost > MaxCost || Number == 0) return;            
 
-            if (Supplier.PlanetId != Consumer.PlanetId)
-                if (Consumer.Type == ConsumerType.Supplier)
-                    moveActions.Add(new MoveAction(Consumer.PlanetId, Supplier.PlanetId, Number, null));
-                else
-                    moveActions.Add(new MoveAction(Supplier.PlanetId, Consumer.PlanetId, -Number, Supplier.Resource));
-
-            Consumer.GetAction(moveActions, buildingActions);
+            if (Supplier.IsInitialAction) Supplier.GetAction(Consumer, moveActions, buildingActions);
+            Consumer.GetAction(Supplier, moveActions, buildingActions);
         }
 
-        protected override int CalculateCost()
-        {
-            if (Consumer is EnemyConsumer) return 10000;
-
-            System.Random r = new System.Random();
-            return r.Next(10);
-        }        
+        protected override int CalculateCost() => Supplier.CalculateCost(Consumer) + Consumer.CalculateCost(Supplier);
     }
 }

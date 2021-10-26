@@ -2,12 +2,14 @@
 {
     public class LaborConsumer : Consumer
     {
-        public Supplier Supplier { get; }
-
-        public LaborConsumer(int planetId, int number, int delay = 0, Supplier supplier = null, bool isDummy = false) :
-            base(planetId, number, null, delay, isDummy)
+        public LaborConsumer(int planetId, int number, int delay = 0, Supplier supplier = null) :
+            base(planetId, number, null, delay, supplier)
         {
-            Supplier = supplier;
+        }
+
+        public override int CalculateCost(Supplier supplier)
+        {
+            return 1;
         }
     }
 }

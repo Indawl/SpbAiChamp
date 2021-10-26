@@ -18,6 +18,6 @@ namespace SpbAiChamp.Bots.Raund1.Contracts
             Cost = CalculateCost();
         }
 
-        protected virtual int CalculateCost() => 1;
+        protected virtual int CalculateCost() => 0;
     }
 }

@@ -5,6 +5,7 @@ using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Contracts;
 using SpbAiChamp.Bots.Raund1.Graphs;
 using SpbAiChamp.Bots.Raund1.Partners;
+using SpbAiChamp.Bots.Raund1.Logistics;
 
 namespace SpbAiChamp.Bots.Raund1.Managment
 {
@@ -25,7 +26,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         #region Game's attributes
         public Game Game { get; private set; }
-        public int StonePlanetId { get; private set; }
+        public int DurationQuarter { get; private set; } = 10;
         #endregion
 
         #region Graph's
@@ -59,7 +60,9 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Dictionary<int, PlanetDetail> PlanetDetails { get; private set; }
         public Dictionary<Resource, ResourceDetail> ResourceDetails { get; private set; }
         public Dictionary<BuildingType, BuildingDetail> BuildingDetails { get; private set; }
-        #endregion        
+
+        public TransportTask TransportTask { get; set; }
+        #endregion
 
         public void SetGame(Game game)
         {
@@ -83,75 +86,21 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
                 if (planet.Building.HasValue && planetDetail.WorkerCount > 0)
                     BuildingDetails[planet.Building.Value.BuildingType].Planets.Add(planet.Id);
+
+                if (!Orders.ContainsKey(planet.Id))
+                    Orders[planet.Id] = new Order(planet.Id, Game.CurrentTick, Game.CurrentTick);
             }
-
-            // For Stone Factory
-            if (Game.CurrentTick == 0)
-                StonePlanetId = BuildingDetails[BuildingType.Quarry].Planets.First(_ => PlanetDetails[_].WorkerCount > 0);
-
         }
 
         public void ProcessOrder()
         {
-            // Create orders for factory
-            foreach (var planetDetail in PlanetDetails.Values)
-            {
-                if (Orders[planetDetail.Planet.Id] == null || Orders[planetDetail.Planet.Id].TickEnd <= Game.CurrentTick)
-                {
-                    var buildingDetail = BuildingDetails[planetDetail.Planet.Building.Value.BuildingType];
-
-                    var order = new Order(planetDetail.Planet.Id, Game.CurrentTick, Game.CurrentTick);
-                    Orders[planetDetail.Planet.Id] = order;
-
-                    // Building needs
-                    if (planetDetail.Planet.Building.HasValue)
-                    {
-                        // For work in factory
-                        order.Number = buildingDetail.BuildingProperties.MaxWorkers;
-
-                        // For resources
-                        foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
-                        {
-                            var resourceDetail = ResourceDetails[resource.Key];
-                            var planets = BuildingDetails[resourceDetail.BuildingType].Planets;
-
-                            // Get stock
-                            planetDetail.Planet.Resources.TryGetValue(resource.Key, out var stock);
-
-                            // No planets, try min, maybe we have resources
-                            if (planets.Count > 0)
-                            {
-                                int duration = planets.Min(_ => planetDetail.ShortestWay.GetDistance(_));
-                                order.Resources.Add(resource.Key, stock + resource.Value * duration * planets.Count); // get max, after min duration tickend recreate order
-                                order.TickEnd += duration;
-                            }
-                            else if (resourceDetail.Number > 0)
-                                order.Resources.Add(resource.Key, stock + resourceDetail.Number / resource.Value);
-                        }
-                    }
-                }
-
-                // Refresh build factory
-                Orders[planetDetail.Planet.Id].BuildingType = null;
-            }
-
-            // Create orders for building new factory
-            int stoneCount = ResourceDetails[Resource.Stone].Number;
-
-            // If Quarry destroyed
-            if (!PlanetDetails[StonePlanetId].Planet.Building.HasValue)
-            {
-                Orders[StonePlanetId].BuildingType = BuildingType.Quarry;
-                stoneCount -= BuildingDetails[BuildingType.Quarry].BuildingProperties.BuildResources[Resource.Stone];
-            }
+            foreach (var order in Orders.Where(_=>_.Value.TickEnd <= Game.CurrentTick))
+                Orders[order.Key] = new Order(order.Key, Game.CurrentTick, Game.CurrentTick);
 
             // Building brunch
             foreach (BuildingType buildingType in Enum.GetValues(typeof(BuildingType)))
-                if (BuildingIsNeed(buildingType))
+                if (BuildingDetails.ContainsKey(buildingType))
                 {
-                    stoneCount -= BuildingDetails[buildingType].BuildingProperties.BuildResources[Resource.Stone];
-                    if (stoneCount < 0) break;
-
                     var planetId = GetPlanetForBuilding(buildingType);
                     if (planetId.HasValue)
                     {
@@ -160,6 +109,47 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                         Orders[planetId.Value].Number = Math.Max(0, BuildingDetails[buildingType].BuildingProperties.MaxWorkers - BuildingDetails[buildingType].BuildingProperties.BuildResources.Values.Sum());
                     }
                 }
+
+            // Create orders for factory
+            foreach (var planetDetail in PlanetDetails.Values)
+            {
+                if (Orders[planetDetail.Planet.Id].TickEnd <= Game.CurrentTick)
+                {
+                    var order = Orders[planetDetail.Planet.Id];
+                    var buildingType = order.BuildingType.HasValue ? order.BuildingType : planetDetail.Planet.Building?.BuildingType ?? null;
+
+                    // Building needs
+                    if (buildingType.HasValue)
+                    {
+                        var buildingDetail = BuildingDetails[buildingType.Value];
+
+                        // For work in factory
+                        order.Number = buildingDetail.BuildingProperties.MaxWorkers;
+
+                        // For resources
+                        foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
+                        {
+                            var resourceDetail = ResourceDetails[resource.Key];
+                            var buildingDetails = BuildingDetails[resourceDetail.BuildingType];
+
+                            // Get stock
+                            planetDetail.Planet.Resources.TryGetValue(resource.Key, out var stock);
+
+                            // No planets, try min, maybe we have resources
+                            if (buildingDetails.Planets.Count > 0)
+                            {
+                                int duration = DurationQuarter * buildingDetails.Planets.Min(_ => planetDetail.ShortestWay.GetDistance(_));
+                                // get max, after min duration tickend recreate order
+                                order.Resources.Add(resource.Key, stock + duration * buildingDetails.Planets.Count * resource.Value *
+                                                                  buildingDetails.BuildingProperties.MaxWorkers / buildingDetails.BuildingProperties.ProduceAmount);
+                                order.TickEnd += order.BuildingType.HasValue ? 0 : duration;
+                            } // here no planet!!!
+                            else if (resourceDetail.Number > 0 || stock > 0)
+                                order.Resources.Add(resource.Key, stock + resourceDetail.Number);
+                        }
+                    }
+                }
+            }
         }
 
         private int? GetPlanetForBuilding(BuildingType buildingType)
@@ -182,13 +172,19 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 int dist = 0;
 
                 // From
-                foreach (var resource in buildingDetail.BuildingProperties.WorkResources.Keys)
-                    dist += BuildingDetails[ResourceDetails[resource].BuildingType].Planets.Min(_ => planetDetail.ShortestWay.GetDistance(_));
+                var resources = buildingDetail.BuildingProperties.WorkResources.Count == 0
+                              ? buildingDetail.BuildingProperties.BuildResources
+                              : buildingDetail.BuildingProperties.WorkResources;
+                foreach (var resource in resources.Keys)
+                    if (BuildingDetails[ResourceDetails[resource].BuildingType].Planets.Count > 0)
+                        dist += BuildingDetails[ResourceDetails[resource].BuildingType].Planets
+                            .Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
 
                 // To
                 if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
-                    dist += BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType]
-                        .Planets.Min(_ => planetDetail.ShortestWay.GetDistance(_));
+                    if (BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType].Planets.Count > 0)
+                        dist += BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType].Planets
+                            .Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
 
                 if (dist < minDist)
                 {
@@ -199,17 +195,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             if (minDist == 0) return null;
             return planetId;
-        }
-
-        private bool BuildingIsNeed(BuildingType buildingType)
-        {
-            bool isNeed = false;
-
-            foreach (var resource in BuildingDetails[buildingType].BuildingProperties.WorkResources)
-                if (BuildingDetails[ResourceDetails[resource.Key].BuildingType].Planets.Count > 0)
-                    isNeed = true;
-
-            return isNeed;
         }
 
         public void GetPartners(out List<Supplier> suppliers, out List<Consumer> consumers)
@@ -244,10 +229,10 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 consumers.Add(new LaborConsumer(order.PlanetId, order.Number, order.Delay));
 
             foreach (var resource in Orders[planetDetail.Planet.Id].Resources)
-                consumers.Add(new ResourceConsumer(order.PlanetId, resource.Value, resource.Key, order.Delay));
-
-            if (order.BuildingType.HasValue)
-                consumers.Add(new BuildingConsumer(order.PlanetId, order.BuildingType.Value));
+                if (order.BuildingType.HasValue)
+                    consumers.Add(new BuildingConsumer(order.PlanetId, order.BuildingType.Value, resource.Key, resource.Value));
+                else
+                    consumers.Add(new ResourceConsumer(order.PlanetId, resource.Value, resource.Key, order.Delay));
         }
 
         private void GetPartners(List<Supplier> suppliers, List<Consumer> consumers, int planetId, Resource resource, int number, int delay = 0)

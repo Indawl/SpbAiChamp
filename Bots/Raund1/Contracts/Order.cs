@@ -9,7 +9,7 @@ namespace SpbAiChamp.Bots.Raund1.Contracts
         public int TickStart { get; }
         public int TickEnd { get; set; }
 
-        public Dictionary<Resource, int> Resources { get; set; }
+        public Dictionary<Resource, int> Resources { get; set; } = new Dictionary<Resource, int>();
         public int Number { get; set; }
 
         public BuildingType? BuildingType { get; set; }

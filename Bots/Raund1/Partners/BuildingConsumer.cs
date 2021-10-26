@@ -8,13 +8,21 @@ namespace SpbAiChamp.Bots.Raund1.Partners
     {
         public BuildingType BuildingType { get; private set; }
 
-        public BuildingConsumer(int planetId, BuildingType buildingType) :
-            base(planetId, 0, null, 0)
+        public BuildingConsumer(int planetId, BuildingType buildingType, Resource resource, int number) :
+            base(planetId, number, resource, 0)
         {
             BuildingType = buildingType;
         }
 
-        public override void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
+        public override int CalculateCost(Supplier supplier)
+        {
+            if ((supplier.Resource.HasValue && (!Resource.HasValue || Resource.Value != supplier.Resource.Value))
+                || (!supplier.Resource.HasValue && Resource.HasValue))
+                return int.MaxValue / 2;
+            else return 1;
+        }
+
+        public override void GetAction(Supplier supplier, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
             if (!Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.HasValue)
                 buildingActions.Add(new BuildingAction(PlanetId, BuildingType));

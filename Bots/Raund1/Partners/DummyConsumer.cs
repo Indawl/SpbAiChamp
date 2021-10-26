@@ -2,10 +2,10 @@
 
 namespace SpbAiChamp.Bots.Raund1.Partners
 {
-    public class ResourceConsumer : Consumer
+    public class DummyConsumer : Consumer
     {
-        public ResourceConsumer(int planetId, int number, Resource resource, int delay = 0) :
-            base(planetId, number, resource, delay)
+        public DummyConsumer(int number, Resource? resource = null) : 
+            base(0, number, resource)
         {
         }
 
@@ -13,7 +13,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners
         {
             if (supplier.Resource.HasValue && (!Resource.HasValue || Resource.Value != supplier.Resource.Value))
                 return int.MaxValue / 2;
-            else return 1;
+            else return 0;
         }
     }
 }

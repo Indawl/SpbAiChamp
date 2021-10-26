@@ -12,6 +12,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public int GetDistance(int planetId) => costAsFar[new Node(planetId)];
         public int GetNextPlanet(int planetId) => GetNextNode(new Node(planetId)).id;
+        public int GetNextPlanetInv(int planetId) => cameFrom[new Node(planetId)].id;
 
         protected override int GetCost(Edge edge)
             => base.GetCost(edge) + (Manager.CurrentManager.PlanetDetails[edge.toNode.id].WorkerCount < 0 ? PENALTY : 0);
