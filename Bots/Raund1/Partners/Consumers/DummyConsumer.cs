@@ -1,7 +1,8 @@
-﻿using SpbAiChamp.Model;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using SpbAiChamp.Model;
+using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
 
-namespace SpbAiChamp.Bots.Raund1.Partners
+namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class DummyConsumer : Consumer
     {

@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Managment;
+using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
 
-namespace SpbAiChamp.Bots.Raund1.Partners
+namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class Consumer : Partner
     {

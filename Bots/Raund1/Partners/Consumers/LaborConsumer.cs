@@ -1,4 +1,6 @@
-﻿namespace SpbAiChamp.Bots.Raund1.Partners
+﻿using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
+
+namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class LaborConsumer : Consumer
     {

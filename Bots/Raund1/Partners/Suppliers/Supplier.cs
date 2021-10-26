@@ -1,6 +1,7 @@
 ﻿using SpbAiChamp.Model;
+using SpbAiChamp.Bots.Raund1.Partners.Consumers;
 
-namespace SpbAiChamp.Bots.Raund1.Partners
+namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
 {
     public class Supplier : Partner
     {

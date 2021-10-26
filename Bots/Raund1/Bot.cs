@@ -3,7 +3,8 @@ using System.Linq;
 using SpbAiChamp.Model;
 using Action = SpbAiChamp.Model.Action;
 using SpbAiChamp.Bots.Raund1.Managment;
-using SpbAiChamp.Bots.Raund1.Partners;
+using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
+using SpbAiChamp.Bots.Raund1.Partners.Consumers;
 using SpbAiChamp.Bots.Raund1.Logistics;
 
 namespace SpbAiChamp.Bots.Raund1

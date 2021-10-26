@@ -1,4 +1,5 @@
-﻿using SpbAiChamp.Bots.Raund1.Partners;
+﻿using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
+using SpbAiChamp.Bots.Raund1.Partners.Consumers;
 
 namespace SpbAiChamp.Bots.Raund1.Contracts
 {

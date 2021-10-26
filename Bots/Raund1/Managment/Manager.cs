@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using SpbAiChamp.Model;
-using SpbAiChamp.Bots.Raund1.Contracts;
 using SpbAiChamp.Bots.Raund1.Graphs;
-using SpbAiChamp.Bots.Raund1.Partners;
+using SpbAiChamp.Bots.Raund1.Contracts;
+using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
+using SpbAiChamp.Bots.Raund1.Partners.Consumers;
 using SpbAiChamp.Bots.Raund1.Logistics;
 
 namespace SpbAiChamp.Bots.Raund1.Managment

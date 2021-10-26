@@ -1,4 +1,4 @@
-﻿namespace SpbAiChamp.Bots.Raund1.Partners
+﻿namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class EnemyConsumer : Consumer
     {
