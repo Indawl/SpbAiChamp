@@ -16,7 +16,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners
             return Manager.CurrentManager.PlanetDetails[consumer.PlanetId].ShortestWay.GetDistance(PlanetId);
         }
 
-        public override void GetAction(Consumer consumer, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
+        public override void GetAction(Consumer consumer, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
             if (consumer.PlanetId != PlanetId)
                 moveActions.Add(new MoveAction(PlanetId, Manager.CurrentManager.PlanetDetails[consumer.PlanetId].ShortestWay.GetNextPlanetInv(PlanetId), Number, Resource));

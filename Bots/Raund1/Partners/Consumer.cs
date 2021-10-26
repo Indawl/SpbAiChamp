@@ -16,7 +16,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners
             Supplier = supplier;
         }
 
-        public virtual void GetAction(Supplier supplier, List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
+        public virtual void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
 
         public virtual int CalculateCost(Supplier supplier) => 1;
     }

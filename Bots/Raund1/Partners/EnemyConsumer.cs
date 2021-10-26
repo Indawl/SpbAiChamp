@@ -15,9 +15,9 @@ namespace SpbAiChamp.Bots.Raund1.Partners
             return base.CalculateCost(supplier);
         }
 
-        public override void GetAction(Supplier supplier, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
+        public override void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            base.GetAction(supplier, moveActions, buildingActions);
+            base.GetAction(supplier, number, moveActions, buildingActions);
         }
     }
 }

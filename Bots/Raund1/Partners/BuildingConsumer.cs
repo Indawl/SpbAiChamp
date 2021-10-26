@@ -22,7 +22,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners
             else return 1;
         }
 
-        public override void GetAction(Supplier supplier, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
+        public override void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
             if (!Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.HasValue)
                 buildingActions.Add(new BuildingAction(PlanetId, BuildingType));

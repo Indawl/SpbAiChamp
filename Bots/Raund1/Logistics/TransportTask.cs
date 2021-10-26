@@ -101,7 +101,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             for (int i = 0; i < Suppliers.Count; i++)
                 if (Suppliers[i].Number > 0)
                     for (int j = 0; j < Consumers.Count; j++)
-                        if (Consumers[j].Number > 0 && ShippingPlans[i, j].Cost < int.MaxValue / 2)
+                        if (Consumers[j].Number > 0 && ShippingPlans[i, j].Possible)
                         {
                             ShippingPlans[i, j].IsBase = true;
                             ShippingPlans[i, j].Number = Math.Min(Suppliers[i].Number, Consumers[j].Number);
