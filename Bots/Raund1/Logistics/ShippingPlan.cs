@@ -36,6 +36,6 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }
 
-        protected override int CalculateCost() => Supplier.CalculateCost(Consumer) + Consumer.CalculateCost(Supplier);
+        protected override int CalculateCost() => Possible ? (Supplier.CalculateCost(Consumer) + Consumer.CalculateCost(Supplier)) : int.MaxValue;
     }
 }
