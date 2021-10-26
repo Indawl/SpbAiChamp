@@ -1,4 +1,5 @@
 ﻿using SpbAiChamp.Model;
+using System.Collections.Generic;
 
 namespace SpbAiChamp.Bots.Raund1.Partners
 {
@@ -9,11 +10,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners
         {
         }
 
-        public override int CalculateCost(Supplier supplier)
-        {
-            if (supplier.Resource.HasValue && (!Resource.HasValue || Resource.Value != supplier.Resource.Value))
-                return int.MaxValue / 2;
-            else return 0;
-        }
+        public override void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
     }
 }

@@ -6,10 +6,5 @@
             base(planetId, number, null, delay, supplier)
         {
         }
-
-        public override int CalculateCost(Supplier supplier)
-        {
-            return 1;
-        }
     }
 }

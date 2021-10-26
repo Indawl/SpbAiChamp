@@ -8,12 +8,5 @@ namespace SpbAiChamp.Bots.Raund1.Partners
             base(planetId, number, resource, delay)
         {
         }
-
-        public override int CalculateCost(Supplier supplier)
-        {
-            if (supplier.Resource.HasValue && (!Resource.HasValue || Resource.Value != supplier.Resource.Value))
-                return int.MaxValue / 2;
-            else return 1;
-        }
     }
 }

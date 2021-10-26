@@ -32,8 +32,8 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         {
             if (!IsBase || Cost > MaxCost || Number == 0) return;            
 
-            if (Supplier.IsInitialAction) Supplier.GetAction(Consumer, Number, moveActions, buildingActions);
-            Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
+            if (Supplier.IsInitialAction)
+                Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }
 
         protected override int CalculateCost() => Supplier.CalculateCost(Consumer) + Consumer.CalculateCost(Supplier);

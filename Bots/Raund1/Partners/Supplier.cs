@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using SpbAiChamp.Model;
+﻿using SpbAiChamp.Model;
 
 namespace SpbAiChamp.Bots.Raund1.Partners
 {
@@ -8,21 +6,16 @@ namespace SpbAiChamp.Bots.Raund1.Partners
     {
         public bool IsInitialAction { get; protected set; } = false;
 
+        public int Number { get; set; }
         public int? Potential { get; set; }
-        public int countBase { get; set; }
-
-        public int NumberO;
+        public int countBase { get; set; }        
 
         public Supplier(int planetId, int number, Resource? resource = null, int delay = 0) :
             base(planetId, number, resource, delay)
         {
-            NumberO = number;
+            Number = number;
         }
-
-        public virtual void GetAction(Consumer consumer, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
-
-        public virtual int CalculateCost(Consumer consumer) => 2;
-
-        public virtual bool CheckConsumer(Consumer consumer) => true;
+        public virtual int CalculateCost(Consumer consumer) => 0;
+        public virtual bool CheckConsumer(Consumer consumer) => Resource == consumer.Resource;
     }
 }
