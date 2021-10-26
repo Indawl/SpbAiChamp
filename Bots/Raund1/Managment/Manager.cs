@@ -122,8 +122,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         private void GetCapitalPlanet()
         {
-            int x = MyPlanets.Sum(_ => PlanetDetails[_].Planet.X) / PlanetDetails.Count;
-            int y = MyPlanets.Sum(_ => PlanetDetails[_].Planet.Y) / PlanetDetails.Count;
+            int x = MyPlanets.Values.Sum(_ => _.Planet.X) / PlanetDetails.Count;
+            int y = MyPlanets.Values.Sum(_ => _.Planet.Y) / PlanetDetails.Count;
             int minDist = int.MaxValue;
 
             CapitalPlanetId = PlanetDetails.Values.First();
