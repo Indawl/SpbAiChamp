@@ -106,6 +106,9 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
                 if (planet.Building.HasValue)
                     BuildingDetails[planet.Building.Value.BuildingType].Planets.Add(planet.Id);
+
+                if (!Orders.ContainsKey(planet.Id))
+                    Orders[planet.Id] = new Order(planet.Id, Game.CurrentTick, Game.CurrentTick);
             }
 
             // Division territory
@@ -140,8 +143,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         public void ProcessOrder()
         {
-            foreach (var order in Orders.Where(_ => _.Value == null || _.Value.TickEnd <= Game.CurrentTick))
-                Orders[order.Key] = new Order(order.Key, Game.CurrentTick, Game.CurrentTick);
+            foreach (var planetDetail in PlanetDetails.Values.Where(_ => Orders[_.Planet.Id].TickEnd <= Game.CurrentTick))
+                Orders[planetDetail.Planet.Id] = new Order(planetDetail.Planet.Id, Game.CurrentTick, Game.CurrentTick);
 
             // Building brunch
             if (IsRefreshBrunchBuildings) //TO DO: determ value refresh

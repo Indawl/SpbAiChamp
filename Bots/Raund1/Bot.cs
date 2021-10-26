@@ -14,8 +14,6 @@ namespace SpbAiChamp.Bots.Raund1
 
         public Action GetAction()
         {
-            if (Manager.CurrentManager.Game.CurrentTick < 150) return new Action(new MoveAction[0], new BuildingAction[0], null);
-
             List<MoveAction> moveActions = new List<MoveAction>();
             List<BuildingAction> buildingActions = new List<BuildingAction>();
 
