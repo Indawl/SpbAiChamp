@@ -24,6 +24,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners
                 buildingActions.Add(new BuildingAction(PlanetId, null));
         }
 
-        public override string ToString() => BuildingType.ToString() + ": " + base.ToString();
+        public override string ToString() => BuildingType.ToString() + base.ToString();
     }
 }

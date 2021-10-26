@@ -17,6 +17,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners
             Delay = delay;
         }
 
-        public override string ToString() => "Id: " + PlanetId +"; N: " + Quantity + "; R: " + Resource + "; T: " + Delay;
+        public override string ToString() => "<" + GetType().Name +  "> Id: " + PlanetId +"; N: " + Quantity + "; R: " + Resource + "; T: " + Delay;
     }
 }
