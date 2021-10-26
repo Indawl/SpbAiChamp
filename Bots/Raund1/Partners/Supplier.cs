@@ -20,6 +20,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners
 
         public virtual void GetAction(Consumer consumer, List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
 
-        public virtual int CalculateCost(Consumer consumer) => 0;
+        public virtual int CalculateCost(Consumer consumer) => 2;
     }
 }

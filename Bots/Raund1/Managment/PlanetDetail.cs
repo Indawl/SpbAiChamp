@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Collections.Generic;
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Logistics;
 
@@ -12,6 +11,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         public Planet Planet { get; }
         public int WorkerCount { get; } = 0;
+        public int Influence { get; set; } = 0;
 
         public ShortestWay ShortestWay => shortestWay == null ? shortestWay = new ShortestWay(Planet) : shortestWay;
         public static int Distance(Planet from, Planet to) => Math.Abs(to.X - from.X) + Math.Abs(to.Y - from.Y);

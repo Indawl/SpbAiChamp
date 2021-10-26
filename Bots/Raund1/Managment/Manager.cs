@@ -22,6 +22,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         }
 
         private static Graph graph = null;
+        public static bool IsRefreshBrunchBuildings { get; set; } = true;
         #endregion
 
         #region Game's attributes
@@ -53,6 +54,23 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             return graph;
         }
+        private void DivisionTerritory()
+        {
+            // Initialize
+            foreach (var node in Graph.edges.Keys)
+                PlanetDetails[node.id].Influence = 0;
+
+            // Spread of influence
+            foreach (var node in Graph.edges)
+            {
+                int sign = Math.Sign(PlanetDetails[node.Key.id].WorkerCount) * 2 * Game.MaxTravelDistance;
+                if (sign == 0) continue;
+
+                PlanetDetails[node.Key.id].Influence += sign;
+                foreach (var edge in node.Value)
+                    PlanetDetails[edge.toNode.id].Influence += sign - edge.cost;
+            }
+        }
         #endregion
 
         #region Game's properties
@@ -60,6 +78,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Dictionary<int, PlanetDetail> PlanetDetails { get; private set; }
         public Dictionary<Resource, ResourceDetail> ResourceDetails { get; private set; }
         public Dictionary<BuildingType, BuildingDetail> BuildingDetails { get; private set; }
+        public Dictionary<int, PlanetDetail> MyPlanets { get; set; }
+        public PlanetDetail CapitalPlanetId { get; set; }
 
         public TransportTask TransportTask { get; set; }
         #endregion
@@ -84,20 +104,96 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 var planetDetail = new PlanetDetail(planet);
                 PlanetDetails.Add(planet.Id, planetDetail);
 
-                if (planet.Building.HasValue && planetDetail.WorkerCount > 0)
+                if (planet.Building.HasValue)
                     BuildingDetails[planet.Building.Value.BuildingType].Planets.Add(planet.Id);
+            }
 
-                if (!Orders.ContainsKey(planet.Id))
-                    Orders[planet.Id] = new Order(planet.Id, Game.CurrentTick, Game.CurrentTick);
+            // Division territory
+            DivisionTerritory();
+
+            // Get my planets
+            MyPlanets = new Dictionary<int, PlanetDetail>();
+            foreach (var planetDetail in PlanetDetails.Values.Where(_ => _.Influence >= 0))
+                MyPlanets.Add(planetDetail.Planet.Id, planetDetail);
+
+            // Get Capital planet
+            GetCapitalPlanet();
+        }
+
+        private void GetCapitalPlanet()
+        {
+            int x = MyPlanets.Sum(_ => PlanetDetails[_].Planet.X) / PlanetDetails.Count;
+            int y = MyPlanets.Sum(_ => PlanetDetails[_].Planet.Y) / PlanetDetails.Count;
+            int minDist = int.MaxValue;
+
+            CapitalPlanetId = PlanetDetails.Values.First();
+            foreach (var planetDetail in MyPlanets.Values)
+            {
+                int dist = PlanetDetail.Distance(CapitalPlanetId.Planet, planetDetail.Planet);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    CapitalPlanetId = planetDetail;
+                }
             }
         }
 
         public void ProcessOrder()
         {
-            foreach (var order in Orders.Where(_=>_.Value.TickEnd <= Game.CurrentTick))
+            foreach (var order in Orders.Where(_ => _.Value == null || _.Value.TickEnd <= Game.CurrentTick))
                 Orders[order.Key] = new Order(order.Key, Game.CurrentTick, Game.CurrentTick);
 
             // Building brunch
+            if (IsRefreshBrunchBuildings) //TO DO: determ value refresh
+                RefreshBrunchBuildings();
+
+            // Create orders for factory
+            foreach (var planetDetail in PlanetDetails.Values)
+            {
+                var order = Orders[planetDetail.Planet.Id];
+                var buildingType = (order.BuildingType.HasValue && IsRefreshBrunchBuildings) ? order.BuildingType : planetDetail.Planet.Building?.BuildingType ?? null;
+
+                // Building needs
+                if (buildingType.HasValue)
+                {
+                    var buildingDetail = BuildingDetails[buildingType.Value];
+
+                    // For work in factory (in exist building)
+                    if (!order.BuildingType.HasValue)
+                        order.Number = buildingDetail.BuildingProperties.MaxWorkers;
+
+                    // For resources
+                    foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
+                    {
+                        var resourceDetail = ResourceDetails[resource.Key];
+                        var buildingDetails = BuildingDetails[resourceDetail.BuildingType];
+
+                        // Get stock
+                        planetDetail.Planet.Resources.TryGetValue(resource.Key, out var stock);
+
+                        // No planets, try min, maybe we have resources
+                        if (buildingDetails.Planets.Count > 0)
+                        {
+                            int number = stock + DurationQuarter * resource.Value;
+
+                            if (order.Resources.ContainsKey(resource.Key))
+                                order.Resources[resource.Key] += number;
+                            else order.Resources.Add(resource.Key, number);
+
+                            order.TickEnd += DurationQuarter;
+                        } // here no planet!!!
+                        else if (resourceDetail.Number > 0 || stock > 0)
+                            order.Resources.Add(resource.Key, stock + resourceDetail.Number);
+                    }
+                }
+            }
+        }
+
+        private void RefreshBrunchBuildings()
+        {
+            foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
+                Orders[order.PlanetId] = new Order(order.PlanetId, Game.CurrentTick, Game.CurrentTick);
+
             foreach (BuildingType buildingType in Enum.GetValues(typeof(BuildingType)))
                 if (BuildingDetails.ContainsKey(buildingType))
                 {
@@ -107,49 +203,11 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                         Orders[planetId.Value].BuildingType = buildingType;
                         Orders[planetId.Value].Resources = new Dictionary<Resource, int>(BuildingDetails[buildingType].BuildingProperties.BuildResources);
                         Orders[planetId.Value].Number = Math.Max(0, BuildingDetails[buildingType].BuildingProperties.MaxWorkers - BuildingDetails[buildingType].BuildingProperties.BuildResources.Values.Sum());
+                        Orders[planetId.Value].TickEnd = Game.MaxTickCount;
                     }
                 }
 
-            // Create orders for factory
-            foreach (var planetDetail in PlanetDetails.Values)
-            {
-                if (Orders[planetDetail.Planet.Id].TickEnd <= Game.CurrentTick)
-                {
-                    var order = Orders[planetDetail.Planet.Id];
-                    var buildingType = order.BuildingType.HasValue ? order.BuildingType : planetDetail.Planet.Building?.BuildingType ?? null;
-
-                    // Building needs
-                    if (buildingType.HasValue)
-                    {
-                        var buildingDetail = BuildingDetails[buildingType.Value];
-
-                        // For work in factory
-                        order.Number = buildingDetail.BuildingProperties.MaxWorkers;
-
-                        // For resources
-                        foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
-                        {
-                            var resourceDetail = ResourceDetails[resource.Key];
-                            var buildingDetails = BuildingDetails[resourceDetail.BuildingType];
-
-                            // Get stock
-                            planetDetail.Planet.Resources.TryGetValue(resource.Key, out var stock);
-
-                            // No planets, try min, maybe we have resources
-                            if (buildingDetails.Planets.Count > 0)
-                            {
-                                int duration = DurationQuarter * buildingDetails.Planets.Min(_ => planetDetail.ShortestWay.GetDistance(_));
-                                // get max, after min duration tickend recreate order
-                                order.Resources.Add(resource.Key, stock + duration * buildingDetails.Planets.Count * resource.Value *
-                                                                  buildingDetails.BuildingProperties.MaxWorkers / buildingDetails.BuildingProperties.ProduceAmount);
-                                order.TickEnd += order.BuildingType.HasValue ? 0 : duration;
-                            } // here no planet!!!
-                            else if (resourceDetail.Number > 0 || stock > 0)
-                                order.Resources.Add(resource.Key, stock + resourceDetail.Number);
-                        }
-                    }
-                }
-            }
+            IsRefreshBrunchBuildings = false;
         }
 
         private int? GetPlanetForBuilding(BuildingType buildingType)
@@ -159,7 +217,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             var buildingDetail = BuildingDetails[buildingType];
 
-            foreach (var planetDetail in PlanetDetails.Values.Where(_ => !_.Planet.Building.HasValue))
+            foreach (var planetDetail in PlanetDetails.Values.Where(_ => MyPlanets.ContainsKey(_.Planet.Id) && !_.Planet.Building.HasValue))
             {
                 // If harvest, then only harvest
                 if (buildingDetail.BuildingProperties.Harvest)
