@@ -42,7 +42,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             CreateInitialPlan();
 
             // Find potencial
-            for (int i = 0; i < 100 && CalculatePotencial(out ShippingPlan shippingPlan) != 0; i++)
+            for (int i = 0; i < 100 && CalculatePotencial(out ShippingPlan shippingPlan) > 0; i++)
                 if (!Redistribution(shippingPlan)) break;
         }
 
@@ -161,10 +161,11 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 shippingPlan.Delta = shippingPlan.Supplier.Potential.Value + shippingPlan.Consumer.Potential.Value - shippingPlan.Cost;
 
             // Find max delta
-            int delta = ShippingPlans.Cast<ShippingPlan>().Max(_ => _.Delta);
-            optimalPlan = ShippingPlans.Cast<ShippingPlan>().First(_ => Math.Abs(_.Delta) == delta);
+            var optimalPlans = ShippingPlans.Cast<ShippingPlan>().Where(_ => _.Possible && !_.IsBase).ToList();
+            optimalPlans.Sort((a, b) => b.Delta.CompareTo(a.Delta));
+            optimalPlan = optimalPlans.First();
 
-            return delta;
+            return optimalPlan.Delta;
         }
 
         private bool Redistribution(ShippingPlan optimalPlan)
@@ -174,7 +175,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             // Count how many base shipping in one row and column
             Consumers.ForEach(_ => _.countBase = 0);
             Suppliers.ForEach(_ => _.countBase = 0);
-
+                        
             for (int i = 0; i < Suppliers.Count; i++)
                 for (int j = 0; j < Consumers.Count; j++)
                     if (ShippingPlans[i, j].IsBase)
@@ -189,7 +190,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             // Find vertex for loop
             ShippingPlan[] loop = new ShippingPlan[4];
             loop[0] = optimalPlan;
-            loop[0].Sign = -1;
+            loop[0].Sign = 1;
 
             for (int i = 0; i < Suppliers.Count; i++)
                 if (ShippingPlans[i, optimalPlan.ConsumerId].IsBase && i != optimalPlan.SupplierId && ShippingPlans[i, optimalPlan.ConsumerId].Consumer.countBase > 1)
@@ -208,7 +209,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 }
 
             loop[3] = ShippingPlans[loop[1].SupplierId, loop[2].ConsumerId];
-            loop[0].Sign = loop[0].Sign;
+            loop[3].Sign = loop[0].Sign;
 
             // Find old shipping that will be unbased
             ShippingPlan oldShipping = loop[1];

@@ -23,7 +23,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         public virtual void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
             if (supplier.PlanetId != PlanetId)
-                moveActions.Add(new MoveAction(Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId), PlanetId, number, Resource));
+                moveActions.Add(new MoveAction(supplier.PlanetId, Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId), number, supplier.Resource));
             else if (Supplier != null)
             {
                 int supplierId = Manager.CurrentManager.TransportTask.Suppliers.IndexOf(Supplier);

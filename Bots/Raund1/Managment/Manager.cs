@@ -13,17 +13,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
     public class Manager
     {
         #region Static Attributes
-        private static Manager[] manager = new Manager[2] { new Manager(), new Manager() };
-        public static Manager CurrentManager => manager[0];
-        public static Manager LastManager => manager[1];
-        public static Manager GetNewManager()
-        {
-            manager[1] = manager[0];
-            return manager[0] = new Manager();
-        }
-
-        private static Graph graph = null;
-        public static bool IsRefreshBrunchBuildings { get; set; } = true;
+        public static Manager CurrentManager { get; } = new Manager();        
         #endregion
 
         #region Game's attributes
@@ -32,6 +22,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         #endregion
 
         #region Graph's
+        private Graph graph = null;
         public Graph Graph => graph == null ? graph = CreateGraph() : graph;
         private Graph CreateGraph()
         {
@@ -80,10 +71,18 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Dictionary<Resource, ResourceDetail> ResourceDetails { get; private set; }
         public Dictionary<BuildingType, BuildingDetail> BuildingDetails { get; private set; }
         public Dictionary<int, PlanetDetail> MyPlanets { get; set; }
-        public PlanetDetail CapitalPlanetId { get; set; }
+        public PlanetDetail CapitalPlanet { get; set; }
+        public int LastCountMyPlanets { get; set; } = 0;
+        public static bool IsRefreshBrunchBuildings { get; set; } = true;
 
         public TransportTask TransportTask { get; set; }
         #endregion
+
+        public Manager GetNewManager()
+        {
+            LastCountMyPlanets = MyPlanets?.Count ?? 0;
+            return CurrentManager;
+        }
 
         public void SetGame(Game game)
         {
@@ -120,6 +119,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             foreach (var planetDetail in PlanetDetails.Values.Where(_ => _.Influence >= 0))
                 MyPlanets.Add(planetDetail.Planet.Id, planetDetail);
 
+            IsRefreshBrunchBuildings = LastCountMyPlanets != MyPlanets.Count;
+
             // Get Capital planet
             GetCapitalPlanet();
         }
@@ -130,14 +131,14 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             int y = MyPlanets.Values.Sum(_ => _.Planet.Y) / PlanetDetails.Count;
             int minDist = int.MaxValue;
 
-            CapitalPlanetId = PlanetDetails.Values.First();
+            CapitalPlanet = PlanetDetails.Values.First();
             foreach (var planetDetail in MyPlanets.Values)
             {
-                int dist = PlanetDetail.Distance(CapitalPlanetId.Planet, planetDetail.Planet);
+                int dist = PlanetDetail.Distance(CapitalPlanet.Planet, planetDetail.Planet);
                 if (dist < minDist)
                 {
                     minDist = dist;
-                    CapitalPlanetId = planetDetail;
+                    CapitalPlanet = planetDetail;
                 }
             }
         }
@@ -210,8 +211,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                         Orders[planetId.Value].TickEnd = Game.MaxTickCount;
                     }
                 }
-
-            IsRefreshBrunchBuildings = false;
         }
 
         private int? GetPlanetForBuilding(BuildingType buildingType)
@@ -240,6 +239,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 foreach (var resource in resources.Keys)
                     if (BuildingDetails[ResourceDetails[resource].BuildingType].Planets.Count > 0)
                         dist += BuildingDetails[ResourceDetails[resource].BuildingType].Planets
+                            .Where(_ => !Orders[_].BuildingType.HasValue)
                             .Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
 
                 // To

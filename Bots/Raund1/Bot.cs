@@ -11,7 +11,7 @@ namespace SpbAiChamp.Bots.Raund1
 {
     public class Bot : IBot
     {
-        public void SetGame(Game game) => Manager.GetNewManager().SetGame(game);
+        public void SetGame(Game game) => Manager.CurrentManager.GetNewManager().SetGame(game);
 
         public Action GetAction()
         {
