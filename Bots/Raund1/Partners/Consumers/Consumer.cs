@@ -8,12 +8,12 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
     public class Consumer : Partner
     {
         public int Number { get; set; }
-        public Supplier Supplier { get; }
+        public Supplier Supplier { get; protected set; }
 
         public int? Potential { get; set; }
         public int countBase { get; set; }
 
-        public Consumer(int planetId, int number, Resource? resource = null, int delay = 0, Supplier supplier = null) : 
+        public Consumer(int planetId, int number, Resource? resource = null, int delay = 0, Supplier supplier = null) :
             base(planetId, number, resource, delay)
         {
             Number = number;

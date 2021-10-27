@@ -1,4 +1,5 @@
 ﻿using SpbAiChamp.Model;
+using SpbAiChamp.Bots.Raund1.Partners.Consumers;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
 {
@@ -8,5 +9,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
             base(0, number, resource)
         {
         }
+
+        public override int CalculateCost(Consumer consumer) => 0;
     }
 }

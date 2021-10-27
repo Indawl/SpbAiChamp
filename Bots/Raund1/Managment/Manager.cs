@@ -60,7 +60,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
                 PlanetDetails[node.Key.id].Influence += sign;
                 foreach (var edge in node.Value)
-                    PlanetDetails[edge.toNode.id].Influence += sign - edge.cost;
+                    PlanetDetails[edge.toNode.id].Influence += sign - 2 * edge.cost + 1;
             }
         }
         #endregion
@@ -74,6 +74,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public PlanetDetail CapitalPlanet { get; set; }
         public int LastCountMyPlanets { get; set; } = 0;
         public static bool IsRefreshBrunchBuildings { get; set; } = true;
+        public double TransportTax { get; set; } = 1.0;
 
         public TransportTask TransportTask { get; set; }
         #endregion
@@ -117,12 +118,37 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             // Get my planets
             MyPlanets = new Dictionary<int, PlanetDetail>();
             foreach (var planetDetail in PlanetDetails.Values.Where(_ => _.Influence >= 0))
+            {
                 MyPlanets.Add(planetDetail.Planet.Id, planetDetail);
 
+                // Get supply and demand
+                if (planetDetail.Planet.Building.HasValue)
+                {
+                    var buildingDetail = BuildingDetails[planetDetail.Planet.Building.Value.BuildingType];
+
+                    foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
+                        ResourceDetails[resource.Key].NumberIn += resource.Value;
+
+                    if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
+                        ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].NumberOut += buildingDetail.BuildingProperties.ProduceAmount;
+                }
+            }
+
+            // Need refresh brunch buildings?
             IsRefreshBrunchBuildings = LastCountMyPlanets != MyPlanets.Count;
 
             // Get Capital planet
             GetCapitalPlanet();
+
+            // Transport Tax
+            if (Game.FlyingWorkerGroups.Length != Game.MaxFlyingWorkerGroups)
+                TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - Game.FlyingWorkerGroups.Length);
+
+            foreach (var resourceDetail in ResourceDetails.Values)
+            {
+                if (resourceDetail.NumberOut != 0) resourceDetail.KoefInOut = (double)resourceDetail.NumberIn / resourceDetail.NumberOut;
+                if (resourceDetail.NumberIn != 0) resourceDetail.KoefOutIn = (double)resourceDetail.NumberOut / resourceDetail.NumberIn;
+            }    
         }
 
         private void GetCapitalPlanet()
@@ -149,7 +175,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 Orders[planetDetail.Planet.Id] = new Order(planetDetail.Planet.Id, Game.CurrentTick, Game.CurrentTick);
 
             // Building brunch
-            if (IsRefreshBrunchBuildings) //TO DO: determ value refresh
+            if (IsRefreshBrunchBuildings)
                 RefreshBrunchBuildings();
 
             // Create orders for factory
@@ -220,7 +246,10 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             var buildingDetail = BuildingDetails[buildingType];
 
-            foreach (var planetDetail in PlanetDetails.Values.Where(_ => MyPlanets.ContainsKey(_.Planet.Id) && !_.Planet.Building.HasValue))
+            foreach (var planetDetail in PlanetDetails.Values
+                .Where(_ => MyPlanets.ContainsKey(_.Planet.Id)
+                         && !_.Planet.Building.HasValue
+                         && !Orders[_.Planet.Id].BuildingType.HasValue))
             {
                 // If harvest, then only harvest
                 if (buildingDetail.BuildingProperties.Harvest)
@@ -230,24 +259,29 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 }
                 else if (planetDetail.Planet.HarvestableResource.HasValue) continue;
 
-                int dist = 0;
-
                 // From
+                List<int> planetFrom = new List<int>();
                 var resources = buildingDetail.BuildingProperties.WorkResources.Count == 0
                               ? buildingDetail.BuildingProperties.BuildResources
                               : buildingDetail.BuildingProperties.WorkResources;
+
                 foreach (var resource in resources.Keys)
                     if (BuildingDetails[ResourceDetails[resource].BuildingType].Planets.Count > 0)
-                        dist += BuildingDetails[ResourceDetails[resource].BuildingType].Planets
-                            .Where(_ => !Orders[_].BuildingType.HasValue)
-                            .Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
+                        planetFrom.AddRange(BuildingDetails[ResourceDetails[resource].BuildingType].Planets);
+                if (planetFrom.Count == 0) planetFrom.Add(CapitalPlanet.Planet.Id);
+
 
                 // To
+                List<int> planetTo = new List<int>();
+
                 if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
                     if (BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType].Planets.Count > 0)
-                        dist += BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType].Planets
-                            .Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
+                        planetTo.AddRange(BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType].Planets);
+                if (planetTo.Count == 0) planetTo.Add(CapitalPlanet.Planet.Id);
 
+                // Find min
+                int dist = planetFrom.Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id))
+                         + planetTo.Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
                 if (dist < minDist)
                 {
                     planetId = planetDetail.Planet.Id;

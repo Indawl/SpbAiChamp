@@ -42,8 +42,8 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             CreateInitialPlan();
 
             // Find potencial
-            for (int i = 0; i < 100 && CalculatePotencial(out ShippingPlan shippingPlan) > 0; i++)
-                if (!Redistribution(shippingPlan)) break;
+            for (int i = 0; i < 100000 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++)
+                if (!Redistribution(optimalPlans)) break;
         }
 
         private void NormalizePartners()
@@ -100,25 +100,44 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         {
             // Initial plan 
             for (int i = 0; i < Suppliers.Count; i++)
-                if (Suppliers[i].Number > 0)
-                    for (int j = 0; j < Consumers.Count; j++)
-                        if (Consumers[j].Number > 0 && ShippingPlans[i, j].Possible)
-                        {
-                            ShippingPlans[i, j].IsBase = true;
-                            ShippingPlans[i, j].Number = Math.Min(Suppliers[i].Number, Consumers[j].Number);
+                for (int j = 0; j < Consumers.Count; j++)
+                    if (Suppliers[i].Number > 0 && Consumers[j].Number > 0 && ShippingPlans[i, j].Possible)
+                    {
+                        ShippingPlans[i, j].IsBase = true;
+                        ShippingPlans[i, j].Number = Math.Min(Suppliers[i].Number, Consumers[j].Number);
 
-                            ShippingPlans[i, j].Supplier.Number -= ShippingPlans[i, j].Number;
-                            ShippingPlans[i, j].Consumer.Number -= ShippingPlans[i, j].Number;
+                        ShippingPlans[i, j].Supplier.Number -= ShippingPlans[i, j].Number;
+                        ShippingPlans[i, j].Consumer.Number -= ShippingPlans[i, j].Number;
 
-                            if (ShippingPlans[i, j].Supplier.Number == 0 && ShippingPlans[i, j].Consumer.Number == 0)
-                                if (j < Consumers.Count - 1)
-                                    ShippingPlans[i, j + 1].IsBase = true;
-                                else if (i < Suppliers.Count - 1)
-                                    ShippingPlans[i + 1, j].IsBase = true;
-                        }
+                        if (ShippingPlans[i, j].Supplier.Number == 0 && ShippingPlans[i, j].Consumer.Number == 0)
+                            if (!SetNextBaseForSupplier(i, j))
+                                SetNextBaseForConsumer(i, j);
+                    }
         }
 
-        private int CalculatePotencial(out ShippingPlan optimalPlan)
+        private bool SetNextBaseForSupplier(int supplierId, int consumerId)
+        {
+            for (int j = consumerId + 1; j < Consumers.Count; j++)
+                if (ShippingPlans[supplierId, j].Possible)
+                {
+                    ShippingPlans[supplierId, j].IsBase = true;
+                    return true;
+                }
+            return false;
+        }
+
+        private bool SetNextBaseForConsumer(int supplierId, int consumerId)
+        {
+            for (int i = supplierId + 1; i < Suppliers.Count; i++)
+                if (ShippingPlans[i, consumerId].Possible)
+                {
+                    ShippingPlans[i, consumerId].IsBase = true;
+                    return true;
+                }
+            return false;
+        }
+
+        private bool CalculatePotencial(out List<ShippingPlan> optimalPlans)
         {
             // Init potential
             Suppliers.ForEach(_ => _.Potential = null);
@@ -161,70 +180,97 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 shippingPlan.Delta = shippingPlan.Supplier.Potential.Value + shippingPlan.Consumer.Potential.Value - shippingPlan.Cost;
 
             // Find max delta
-            var optimalPlans = ShippingPlans.Cast<ShippingPlan>().Where(_ => _.Possible && !_.IsBase).ToList();
+            optimalPlans = ShippingPlans.Cast<ShippingPlan>().Where(_ => _.Possible && !_.IsBase && _.Delta > 0).ToList();
             optimalPlans.Sort((a, b) => b.Delta.CompareTo(a.Delta));
-            optimalPlan = optimalPlans.First();
 
-            return optimalPlan.Delta;
+            return optimalPlans.Count > 0;
         }
 
-        private bool Redistribution(ShippingPlan optimalPlan)
+        private bool Redistribution(List<ShippingPlan> optimalPlans)
         {
-            optimalPlan.IsBase = true;
+            var shippingPlans = ShippingPlans.Cast<ShippingPlan>().ToList();
 
-            // Count how many base shipping in one row and column
-            Consumers.ForEach(_ => _.countBase = 0);
-            Suppliers.ForEach(_ => _.countBase = 0);
-                        
-            for (int i = 0; i < Suppliers.Count; i++)
-                for (int j = 0; j < Consumers.Count; j++)
-                    if (ShippingPlans[i, j].IsBase)
-                    {
-                        ShippingPlans[i, j].Consumer.countBase++;
-                        ShippingPlans[i, j].Supplier.countBase++;
-                    }
+            shippingPlans.ForEach(_ => _.Processed = !_.Possible || !_.IsBase);
 
-            if (optimalPlan.Consumer.countBase < 2 || optimalPlan.Supplier.countBase < 2)
-                return false;   //optimal IsBase = true, but dont matter, becouse it finish algorithm....its possible?!
-
-            // Find vertex for loop
-            ShippingPlan[] loop = new ShippingPlan[4];
-            loop[0] = optimalPlan;
-            loop[0].Sign = 1;
-
-            for (int i = 0; i < Suppliers.Count; i++)
-                if (ShippingPlans[i, optimalPlan.ConsumerId].IsBase && i != optimalPlan.SupplierId && ShippingPlans[i, optimalPlan.ConsumerId].Consumer.countBase > 1)
+            foreach (var optimalPlan in optimalPlans)
+            {
+                shippingPlans.ForEach(_ =>
                 {
-                    loop[1] = ShippingPlans[i, optimalPlan.ConsumerId];
-                    loop[1].Sign = -loop[0].Sign;
+                    _.Visited = _.Processed;
+                    _.FromShipping = null;
+                });
+
+                var cycle = FindCycle(optimalPlan);
+                if (cycle.Count < 4) continue;
+
+                var cycleMinus = cycle.Where((value, index) => index % 2 == 1).ToList();
+                int min = cycleMinus.Min(_ => _.Number);
+
+                optimalPlan.IsBase = true;
+                cycleMinus.First(_ => _.Number == min).IsBase = false;
+
+                for (int i = 0, sign = 1; i < cycle.Count; i++, sign *= -1)
+                    cycle[i].Number += sign * min;
+            }
+
+            return optimalPlans.Exists(_ => _.IsBase);
+        }
+
+        private List<ShippingPlan> FindCycle(ShippingPlan shippingPlan)
+        {
+            List<ShippingPlan> cycle = new List<ShippingPlan>();
+            shippingPlan.Visited = false;
+
+            Queue<ShippingPlan> processShippings = new Queue<ShippingPlan>();
+            processShippings.Enqueue(shippingPlan);
+
+            bool direction = false;
+            ShippingPlan shipping = null;
+
+            while (processShippings.Count > 0)
+            {
+                shipping = processShippings.Dequeue();
+                if (shipping.Visited) continue;
+
+                if (cycle.Count == 0)
+                    cycle.Add(shippingPlan);
+                else if (shipping == shippingPlan)
                     break;
+                else shipping.Visited = true;
+
+                #region Neigborns
+                if (direction)
+                {
+                    for (int j = 0; j < Consumers.Count; j++)
+                        if (!ShippingPlans[shippingPlan.SupplierId, j].Visited)
+                        {
+                            processShippings.Enqueue(ShippingPlans[shippingPlan.SupplierId, j]);
+                            ShippingPlans[shippingPlan.SupplierId, j].FromShipping = shipping;
+                        }
+                }
+                else
+                {
+                    for (int i = 0; i < Suppliers.Count; i++)
+                        if (!ShippingPlans[i, shippingPlan.ConsumerId].Visited)
+                        {
+                            processShippings.Enqueue(ShippingPlans[i, shippingPlan.ConsumerId]);
+                            ShippingPlans[i, shippingPlan.ConsumerId].FromShipping = shipping;
+                        }
                 }
 
-            for (int j = 0; j < Consumers.Count; j++)
-                if (ShippingPlans[optimalPlan.SupplierId, j].IsBase && j != optimalPlan.ConsumerId && ShippingPlans[optimalPlan.SupplierId, j].Supplier.countBase > 1)
-                {
-                    loop[2] = ShippingPlans[optimalPlan.SupplierId, j];
-                    loop[2].Sign = -loop[0].Sign;
-                    break;
-                }
+                direction = !direction;
+                #endregion
+            }
 
-            loop[3] = ShippingPlans[loop[1].SupplierId, loop[2].ConsumerId];
-            loop[3].Sign = loop[0].Sign;
+            shipping = shippingPlan.FromShipping;
+            while (shipping != null && shipping != shippingPlan)
+            {
+                cycle.Add(shipping);
+                shipping = shipping.FromShipping;
+            }
+            cycle.Add(shippingPlan);
 
-            // Find old shipping that will be unbased
-            ShippingPlan oldShipping = loop[1];
-
-            for (int i = 2; i < 4; i++)
-                if (Math.Abs(loop[i].Number) < Math.Abs(oldShipping.Number))
-                    oldShipping = loop[i];
-
-            oldShipping.IsBase = false;
-
-            // Redistribute
-            for (int i = 0; i < 4; i++)
-                loop[i].Number += loop[i].Sign * oldShipping.Number;
-
-            return true;
+            return cycle;
         }
     }
 }

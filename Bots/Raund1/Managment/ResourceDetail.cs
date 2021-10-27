@@ -8,6 +8,11 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Resource Resource { get; }
         public int Number { get; } = 0;
 
+        public int NumberIn { get; set; } = 0;
+        public int NumberOut { get; set; } = 0;
+        public double KoefInOut { get; set; }
+        public double KoefOutIn { get; set; }
+
         public BuildingType BuildingType { get; }
 
         public ResourceDetail(Resource resource)

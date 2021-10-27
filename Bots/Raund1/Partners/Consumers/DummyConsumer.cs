@@ -11,6 +11,8 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         {
         }
 
+        public override int CalculateCost(Supplier supplier) => 0;
+
         public override void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
     }
 }
