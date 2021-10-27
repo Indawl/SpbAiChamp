@@ -41,9 +41,22 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             // Get transportation plan
             CreateInitialPlan();
 
+#if MYDEBUG
+            Debug.DebugStrategy.BaseCount = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
+#endif
+
             // Find potencial
-            for (int i = 0; i < 100000 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++)
+            //for (int i = 0; i < 100000 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++)
+            for (int i = 0; CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
+#if MYDEBUG
+                , Debug.DebugStrategy.CountRedist++
+#endif
+                )
                 if (!Redistribution(optimalPlans)) break;
+
+#if MYDEBUG
+            Debug.DebugStrategy.BaseCountAfter = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
+#endif
         }
 
         private void NormalizePartners()

@@ -39,6 +39,10 @@ namespace SpbAiChamp.Bots.Raund1
                 .GroupBy(_ => new { _.Planet })
                 .Select(_ => new BuildingAction(_.Key.Planet, _.First().BuildingType)).ToArray();
 
+#if MYDEBUG
+            Debug.DebugStrategy.Println(groupMoveActions, groupBuildingActions);
+#endif
+
             // Return actions
             return new Action(groupMoveActions, groupBuildingActions, null);
         }
