@@ -4,6 +4,10 @@ namespace SpbAiChamp.Bots.Raund1.Partners
 {
     public class Partner
     {
+#if MYDEBUG
+        private static int MaxId = 0;
+        public int Id = ++MaxId;
+#endif
         public int PlanetId { get; private set; }
         public int Quantity { get; private set; }
         public Resource? Resource { get; private set; }
