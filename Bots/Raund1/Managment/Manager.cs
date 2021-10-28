@@ -143,7 +143,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             // Transport Tax
             if (Game.FlyingWorkerGroups.Length != Game.MaxFlyingWorkerGroups)
-                TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - Game.FlyingWorkerGroups.Length);
+                TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex).Count());
 
             // Log
             GameLog.Invalidate();

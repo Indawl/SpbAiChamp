@@ -39,11 +39,17 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         private void CreateTransportMap()
         {
+#if MYDEBUG
+            Debug.DebugStrategy.TimeAfter = MyStrategy.watch.ElapsedMilliseconds;
+#endif
             // Create shipping plan
             CreateShippingPlan();
 
             // Get transportation plan
             CreateInitialPlan();
+#if MYDEBUG
+            Debug.DebugStrategy.TimeAfter = MyStrategy.watch.ElapsedMilliseconds - Debug.DebugStrategy.TimeAfter;
+#endif
 
             if (Suppliers.Count + Consumers.Count == 0) return;
 
@@ -52,15 +58,13 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 #endif
 
             // Find potencial
-            HashSet<ShippingPlan> processedPlans = new HashSet<ShippingPlan>();
-
             for (int i = 0; i < 100 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
-         //   for (int i = 0; CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
+                //   for (int i = 0; CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
 #if MYDEBUG
                 , CountRedist++
 #endif
                 )
-                if (!Redistribution(optimalPlans, processedPlans)) break;
+                if (!Redistribution(optimalPlans)) break;
 
 #if MYDEBUG
             BaseCountAfter = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
@@ -99,6 +103,10 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         private bool CalculatePotencial(out List<ShippingPlan> optimalPlans)
         {
+#if MYDEBUG
+            long tp = MyStrategy.watch.ElapsedMilliseconds;
+#endif
+
             // Init potential
             Suppliers.ForEach(_ => _.Potential = null);
             Consumers.ForEach(_ => _.Potential = null);
@@ -148,120 +156,87 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             optimalPlans = ShippingPlans.Cast<ShippingPlan>().Where(_ => !_.IsBase && _.Delta > 0).ToList();
             optimalPlans.Sort((a, b) => b.Delta.CompareTo(a.Delta));
 
+#if MYDEBUG
+            Debug.DebugStrategy.TimePotencial += MyStrategy.watch.ElapsedMilliseconds - tp;
+#endif
+
             return optimalPlans.Count > 0;
         }
 
-        private bool Redistribution(List<ShippingPlan> optimalPlans, HashSet<ShippingPlan> processedPlans)
+        private bool Redistribution(List<ShippingPlan> optimalPlans)
         {
-            var shippingPlans = ShippingPlans.Cast<ShippingPlan>().ToList();
-
-            shippingPlans.ForEach(_ => _.Processed = !_.IsBase);
-
+#if MYDEBUG
+            long tp = MyStrategy.watch.ElapsedMilliseconds;
+#endif
             foreach (var optimalPlan in optimalPlans)
             {
-                shippingPlans.ForEach(_ =>
-                {
-                    _.Visited = _.Processed;
-                    _.FromShipping = null;
-                    _.Direction = null;
-                });
-
-                var cycle = FindCycleSimple(optimalPlan, processedPlans);
+#if MYDEBUG
+                long cy = MyStrategy.watch.ElapsedMilliseconds;
+#endif
+                var cycle = FindCycle(optimalPlan);
+#if MYDEBUG
+                Debug.DebugStrategy.TimeCycle += MyStrategy.watch.ElapsedMilliseconds - cy;
+#endif
                 if (cycle.Count < 4) continue;
 
-                var cycleMinus = cycle.Where(_ => _.Direction != optimalPlan.Direction).ToList();
+                var cycleMinus = cycle.Where((value, index) => index % 2 == 1).ToList();
                 int min = cycleMinus.Min(_ => _.Number);
-                var oldPlan = cycleMinus.First(_ => _.Number == min);
 
+                cycleMinus.First(_ => _.Number == min).IsBase = false;
                 optimalPlan.IsBase = true;
-                oldPlan.IsBase = false;
-                oldPlan.Processed = true;
 
                 for (int i = 0, sign = 1; i < cycle.Count; i++, sign *= -1)
                     cycle[i].Number += sign * min;
             }
-
-            processedPlans.Add(optimalPlans.FirstOrDefault());
-
+#if MYDEBUG
+            Debug.DebugStrategy.TimeRedist += MyStrategy.watch.ElapsedMilliseconds - tp;
+#endif
             return optimalPlans.Exists(_ => _.IsBase);
         }
 
-        private List<ShippingPlan> FindCycleSimple(ShippingPlan shippingPlan, HashSet<ShippingPlan> processedPlans)
+        private List<ShippingPlan> FindCycle(ShippingPlan optimalPlan)
         {
             List<ShippingPlan> cycle = new List<ShippingPlan>();
-            shippingPlan.Visited = false;
 
-            var shippingPlans = ShippingPlans.Cast<ShippingPlan>().Where(_=>_.IsBase).ToList();
+            //var shippingPlans = ShippingPlans.Cast<ShippingPlan>()
+            //    .Where(_ => (_.SupplierId == optimalPlan.SupplierId || _.ConsumerId == optimalPlan.ConsumerId)
+            //             && _.IsBase).ToList();
+            List<ShippingPlan> shippingPlans = new List<ShippingPlan>(Suppliers.Count * Consumers.Count);
+            foreach (var shippingPlan in ShippingPlans)
+                if ((shippingPlan.SupplierId == optimalPlan.SupplierId || shippingPlan.ConsumerId == optimalPlan.ConsumerId) && shippingPlan.IsBase)
+                    shippingPlans.Add(shippingPlan);
+
             shippingPlans.Sort((a, b) => b.Cost.CompareTo(a.Cost));
 
-            foreach (var shipping in shippingPlans)
-            {
-
-            }
-
-            return cycle;
-        }
-
-        private List<ShippingPlan> FindCycle(ShippingPlan shippingPlan, HashSet<ShippingPlan> processedPlans)
-        {
-            List<ShippingPlan> cycle = new List<ShippingPlan>();
-            shippingPlan.Visited = false;
-
-            Queue<ShippingPlan> processShippings = new Queue<ShippingPlan>();
-            processShippings.Enqueue(shippingPlan);
-            //Stack<ShippingPlan> processShippings = new Stack<ShippingPlan>();
-            //processShippings.Push(shippingPlan);
-
-            ShippingPlan shipping = null;
-
-            while (processShippings.Count > 0)
-            {
-                shipping = processShippings.Dequeue();
-                //shipping = processShippings.Pop();
-                if (shipping.Visited) continue;
-
-                if (processedPlans.Contains(shipping) && shipping.Direction == true) continue;
-
-                if (!shipping.Direction.HasValue)
-                    shipping.Direction = true;
-                else if (shipping == shippingPlan && shipping.Direction == shipping.FromShipping.Direction) continue;
-                else if (shipping == shippingPlan) break;
-                else shipping.Visited = true;
-
-                #region Neigborns
-                if (shipping.Direction.Value)
+            foreach (var shippingPlanSupplier in shippingPlans)
+                if (shippingPlanSupplier.SupplierId == optimalPlan.SupplierId)
                 {
-                    for (int j = 0; j < Consumers.Count; j++)
-                        if ((shipping == shippingPlan || j == shippingPlan.ConsumerId) &&
-                            j != shipping.ConsumerId && !ShippingPlans[shipping.SupplierId, j].Visited)
+                    for (int i = 0; i < Suppliers.Count; i++)
+                        if (shippingPlanSupplier.IsBase &&
+                            ShippingPlans[i, shippingPlanSupplier.ConsumerId].IsBase &&
+                            ShippingPlans[i, optimalPlan.ConsumerId].IsBase)
                         {
-                            processShippings.Enqueue(ShippingPlans[shipping.SupplierId, j]);
-                            //processShippings.Push(ShippingPlans[shipping.SupplierId, j]);
-                            ShippingPlans[shipping.SupplierId, j].FromShipping = shipping;
-                            ShippingPlans[shipping.SupplierId, j].Direction = !shipping.Direction.Value;
+                            cycle.Add(optimalPlan);
+                            cycle.Add(shippingPlanSupplier);
+                            cycle.Add(ShippingPlans[i, shippingPlanSupplier.ConsumerId]);
+                            cycle.Add(ShippingPlans[i, optimalPlan.ConsumerId]);
+                            return cycle;
                         }
                 }
                 else
                 {
-                    for (int i = 0; i < Suppliers.Count; i++)
-                        if (i != shipping.SupplierId && !ShippingPlans[i, shipping.ConsumerId].Visited)
+                    for (int j = 0; j < Consumers.Count; j++)
+                        if (shippingPlanSupplier.IsBase &&
+                            ShippingPlans[shippingPlanSupplier.SupplierId, j].IsBase &&
+                            ShippingPlans[optimalPlan.SupplierId, j].IsBase)
                         {
-                            processShippings.Enqueue(ShippingPlans[i, shipping.ConsumerId]);
-                            //processShippings.Push(ShippingPlans[i, shipping.ConsumerId]);
-                            ShippingPlans[i, shipping.ConsumerId].FromShipping = shipping;
-                            ShippingPlans[i, shipping.ConsumerId].Direction = !shipping.Direction.Value;
+                            cycle.Add(optimalPlan);
+                            cycle.Add(shippingPlanSupplier);
+                            cycle.Add(ShippingPlans[shippingPlanSupplier.SupplierId, j]);
+                            cycle.Add(ShippingPlans[optimalPlan.SupplierId, j]);
+                            return cycle;
                         }
                 }
-                #endregion
-            }
-
-            if (shipping != shippingPlan || shipping.FromShipping == null) return cycle;
-
-            do
-            {
-                cycle.Add(shipping);
-                shipping = shipping.FromShipping;
-            } while (shipping != shippingPlan);
 
             return cycle;
         }

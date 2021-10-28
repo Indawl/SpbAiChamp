@@ -18,14 +18,29 @@ namespace SpbAiChamp.Bots.Raund1
             List<MoveAction> moveActions = new List<MoveAction>();
             List<BuildingAction> buildingActions = new List<BuildingAction>();
 
+#if MYDEBUG
+            Debug.DebugStrategy.TimeAfterProcessOrder = MyStrategy.watch.ElapsedMilliseconds;
+#endif
             // Process Orders
             Manager.CurrentManager.ProcessOrder();
+#if MYDEBUG
+            Debug.DebugStrategy.TimeAfterProcessOrder = MyStrategy.watch.ElapsedMilliseconds - Debug.DebugStrategy.TimeAfterProcessOrder;
+            Debug.DebugStrategy.TimeAfterGetPartners = MyStrategy.watch.ElapsedMilliseconds;
+#endif
 
             // Get Suppliers and Consumers
             Manager.CurrentManager.GetPartners(out List<Supplier> suppliers, out List<Consumer> consumers);
+#if MYDEBUG
+            Debug.DebugStrategy.TimeAfterGetPartners = MyStrategy.watch.ElapsedMilliseconds - Debug.DebugStrategy.TimeAfterGetPartners;
+            Debug.DebugStrategy.TimeAfterNormalize = MyStrategy.watch.ElapsedMilliseconds;
+#endif
 
             // Suppliers price must be = Consumers price
             Manager.CurrentManager.NormalizePartners(suppliers, consumers);
+#if MYDEBUG
+            Debug.DebugStrategy.TimeAfterNormalize = MyStrategy.watch.ElapsedMilliseconds - Debug.DebugStrategy.TimeAfterNormalize;
+            Debug.DebugStrategy.TimeAfterTM = MyStrategy.watch.ElapsedMilliseconds;
+#endif
 
             // Get transport map
             foreach (var resourceDetail in Manager.CurrentManager.ResourceDetails)
@@ -38,6 +53,10 @@ namespace SpbAiChamp.Bots.Raund1
                 suppliers.Where(_ => !_.Resource.HasValue).ToList(),
                 consumers.Where(_ => !_.Resource.HasValue).ToList());
 
+#if MYDEBUG
+            Debug.DebugStrategy.TimeAfterTM = MyStrategy.watch.ElapsedMilliseconds - Debug.DebugStrategy.TimeAfterTM;
+            Debug.DebugStrategy.TimeAfterGetAction = MyStrategy.watch.ElapsedMilliseconds;
+#endif
             // Get actions            
             Manager.CurrentManager.TransportTaskWorker.GetActions(moveActions, buildingActions);
 
@@ -49,8 +68,8 @@ namespace SpbAiChamp.Bots.Raund1
             var groupBuildingActions = buildingActions
                 .GroupBy(_ => new { _.Planet })
                 .Select(_ => new BuildingAction(_.Key.Planet, _.First().BuildingType)).ToArray();
-
 #if MYDEBUG
+            Debug.DebugStrategy.TimeAfterGetAction = MyStrategy.watch.ElapsedMilliseconds - Debug.DebugStrategy.TimeAfterGetAction;
             Debug.DebugStrategy.Println(groupMoveActions, groupBuildingActions);
 #endif
 
