@@ -76,7 +76,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public static bool IsRefreshBrunchBuildings { get; set; } = true;
         public double TransportTax { get; set; } = 1.0;
 
-        public TransportTask TransportTask { get; set; }
+        public Dictionary<Resource, TransportTask> TransportTasks { get; set; }
+        public TransportTask TransportTaskWorker { get; set; }
         #endregion
 
         public Manager GetNewManager()
@@ -89,6 +90,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         {
             // Game's attribute
             Game = game;
+            TransportTasks = new Dictionary<Resource, TransportTask>();
 
             // Game's properties
             BuildingDetails = new Dictionary<BuildingType, BuildingDetail>();

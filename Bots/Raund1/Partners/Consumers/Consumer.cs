@@ -26,10 +26,13 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 moveActions.Add(new MoveAction(supplier.PlanetId, Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId), number, supplier.Resource));
             else if (Supplier != null)
             {
-                int supplierId = Manager.CurrentManager.TransportTask.Suppliers.IndexOf(Supplier);
+                var transportTask = Supplier.Resource.HasValue ? Manager.CurrentManager.TransportTasks[Supplier.Resource.Value]
+                                                               : Manager.CurrentManager.TransportTaskWorker;
 
-                for (int j = 0; j < Manager.CurrentManager.TransportTask.Consumers.Count; j++)
-                    Manager.CurrentManager.TransportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions);
+                int supplierId = transportTask.Suppliers.IndexOf(Supplier);
+
+                for (int j = 0; j < transportTask.Consumers.Count; j++)
+                    transportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions);
             }
         }
 

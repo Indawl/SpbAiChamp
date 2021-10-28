@@ -18,8 +18,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
             Number = number;
         }
 
-        public virtual bool CheckConsumer(Consumer consumer) => Resource == consumer.Resource;
-
         public virtual int CalculateCost(Consumer consumer) 
             => (int)(Quantity * Manager.CurrentManager.PlanetDetails[consumer.PlanetId].ShortestWay.GetDistance(PlanetId)
                               * Manager.CurrentManager.TransportTax);

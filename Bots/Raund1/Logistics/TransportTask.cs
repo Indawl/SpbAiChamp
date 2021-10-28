@@ -14,6 +14,13 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public ShippingPlan[,] ShippingPlans { get; set; }
 
+#if MYDEBUG
+        public int BaseCount = 0;
+        public int BaseCountAfter = 0;
+        public int CountRedist = 0;
+        public bool ImpossibleHappens = false;
+#endif
+
         public TransportTask(List<Supplier> suppliers, List<Consumer> consumers)
         {
             Suppliers = suppliers;
@@ -41,21 +48,23 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             // Get transportation plan
             CreateInitialPlan();
 
+            if (Suppliers.Count + Consumers.Count == 0) return;
+
 #if MYDEBUG
-            Debug.DebugStrategy.BaseCount = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
+            BaseCount = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
 #endif
 
             // Find potencial
             //for (int i = 0; i < 100000 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++)
             for (int i = 0; CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
 #if MYDEBUG
-                , Debug.DebugStrategy.CountRedist++
+                , CountRedist++
 #endif
                 )
                 if (!Redistribution(optimalPlans)) break;
 
 #if MYDEBUG
-            Debug.DebugStrategy.BaseCountAfter = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
+            BaseCountAfter = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
 #endif
         }
 
@@ -114,7 +123,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             // Initial plan 
             for (int i = 0; i < Suppliers.Count; i++)
                 for (int j = 0; j < Consumers.Count; j++)
-                    if (Suppliers[i].Number > 0 && Consumers[j].Number > 0 && ShippingPlans[i, j].Possible)
+                    if (Suppliers[i].Number > 0 && Consumers[j].Number > 0)
                     {
                         ShippingPlans[i, j].IsBase = true;
                         ShippingPlans[i, j].Number = Math.Min(Suppliers[i].Number, Consumers[j].Number);
@@ -123,31 +132,11 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                         ShippingPlans[i, j].Consumer.Number -= ShippingPlans[i, j].Number;
 
                         if (ShippingPlans[i, j].Supplier.Number == 0 && ShippingPlans[i, j].Consumer.Number == 0)
-                            if (!SetNextBaseForSupplier(i, j))
-                                SetNextBaseForConsumer(i, j);
+                            if (j + 1 < Consumers.Count)
+                                ShippingPlans[i, j + 1].IsBase = true;
+                            else if (i + 1 < Suppliers.Count)
+                                ShippingPlans[i + 1, j].IsBase = true;
                     }
-        }
-
-        private bool SetNextBaseForSupplier(int supplierId, int consumerId)
-        {
-            for (int j = consumerId + 1; j < Consumers.Count; j++)
-                if (ShippingPlans[supplierId, j].Possible)
-                {
-                    ShippingPlans[supplierId, j].IsBase = true;
-                    return true;
-                }
-            return false;
-        }
-
-        private bool SetNextBaseForConsumer(int supplierId, int consumerId)
-        {
-            for (int i = supplierId + 1; i < Suppliers.Count; i++)
-                if (ShippingPlans[i, consumerId].Possible)
-                {
-                    ShippingPlans[i, consumerId].IsBase = true;
-                    return true;
-                }
-            return false;
         }
 
         private bool CalculatePotencial(out List<ShippingPlan> optimalPlans)
@@ -179,13 +168,18 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                     else if (!shippingPlan.Supplier.Potential.HasValue && !shippingPlan.Consumer.Potential.HasValue)
                         searching = true;
 
-                if (searching && !processing) // in right algoritm is inpossible?! but cycle is norm for me
+                if (searching && !processing) // in right algoritm is inpossible?! 
+                {
+#if MYDEBUG
+                    ImpossibleHappens = true;
+#endif
                     foreach (var shippingPlan in shippingPlans)
                         if (!shippingPlan.Supplier.Potential.HasValue)
                         {
                             shippingPlan.Supplier.Potential = 0;
                             break;
                         }
+                }
             }
 
             // Calculate delta
@@ -193,7 +187,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 shippingPlan.Delta = shippingPlan.Supplier.Potential.Value + shippingPlan.Consumer.Potential.Value - shippingPlan.Cost;
 
             // Find max delta
-            optimalPlans = ShippingPlans.Cast<ShippingPlan>().Where(_ => _.Possible && !_.IsBase && _.Delta > 0).ToList();
+            optimalPlans = ShippingPlans.Cast<ShippingPlan>().Where(_ => !_.IsBase && _.Delta > 0).ToList();
             optimalPlans.Sort((a, b) => b.Delta.CompareTo(a.Delta));
 
             return optimalPlans.Count > 0;
@@ -203,7 +197,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         {
             var shippingPlans = ShippingPlans.Cast<ShippingPlan>().ToList();
 
-            shippingPlans.ForEach(_ => _.Processed = !_.Possible || !_.IsBase);
+            shippingPlans.ForEach(_ => _.Processed = !_.IsBase);
 
             foreach (var optimalPlan in optimalPlans)
             {
@@ -211,16 +205,19 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 {
                     _.Visited = _.Processed;
                     _.FromShipping = null;
+                    _.Direction = null;
                 });
 
                 var cycle = FindCycle(optimalPlan);
                 if (cycle.Count < 4) continue;
 
-                var cycleMinus = cycle.Where((value, index) => index % 2 == 1).ToList();
+                var cycleMinus = cycle.Where(_ => _.Direction != optimalPlan.Direction).ToList();
                 int min = cycleMinus.Min(_ => _.Number);
+                var oldPlan = cycleMinus.First(_ => _.Number == min);
 
                 optimalPlan.IsBase = true;
-                cycleMinus.First(_ => _.Number == min).IsBase = false;
+                oldPlan.IsBase = false;
+                oldPlan.Processed = true;
 
                 for (int i = 0, sign = 1; i < cycle.Count; i++, sign *= -1)
                     cycle[i].Number += sign * min;
@@ -237,7 +234,6 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             Queue<ShippingPlan> processShippings = new Queue<ShippingPlan>();
             processShippings.Enqueue(shippingPlan);
 
-            bool direction = false;
             ShippingPlan shipping = null;
 
             while (processShippings.Count > 0)
@@ -245,43 +241,43 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 shipping = processShippings.Dequeue();
                 if (shipping.Visited) continue;
 
-                if (cycle.Count == 0)
-                    cycle.Add(shippingPlan);
-                else if (shipping == shippingPlan)
-                    break;
+                if (!shipping.Direction.HasValue)
+                    shipping.Direction = true;
+                else if (shipping == shippingPlan && shipping.Direction == shipping.FromShipping.Direction) continue;
+                else if (shipping == shippingPlan) break;
                 else shipping.Visited = true;
 
                 #region Neigborns
-                if (direction)
+                if (shipping.Direction.Value)
                 {
                     for (int j = 0; j < Consumers.Count; j++)
-                        if (!ShippingPlans[shippingPlan.SupplierId, j].Visited)
+                        if (j != shipping.ConsumerId && !ShippingPlans[shipping.SupplierId, j].Visited)
                         {
-                            processShippings.Enqueue(ShippingPlans[shippingPlan.SupplierId, j]);
-                            ShippingPlans[shippingPlan.SupplierId, j].FromShipping = shipping;
+                            processShippings.Enqueue(ShippingPlans[shipping.SupplierId, j]);
+                            ShippingPlans[shipping.SupplierId, j].FromShipping = shipping;
+                            ShippingPlans[shipping.SupplierId, j].Direction = !shipping.Direction.Value;
                         }
                 }
                 else
                 {
                     for (int i = 0; i < Suppliers.Count; i++)
-                        if (!ShippingPlans[i, shippingPlan.ConsumerId].Visited)
+                        if (i != shipping.SupplierId && !ShippingPlans[i, shipping.ConsumerId].Visited)
                         {
-                            processShippings.Enqueue(ShippingPlans[i, shippingPlan.ConsumerId]);
-                            ShippingPlans[i, shippingPlan.ConsumerId].FromShipping = shipping;
+                            processShippings.Enqueue(ShippingPlans[i, shipping.ConsumerId]);
+                            ShippingPlans[i, shipping.ConsumerId].FromShipping = shipping;
+                            ShippingPlans[i, shipping.ConsumerId].Direction = !shipping.Direction.Value;
                         }
                 }
-
-                direction = !direction;
                 #endregion
             }
 
-            shipping = shippingPlan.FromShipping;
-            while (shipping != null && shipping != shippingPlan)
+            if (shipping != shippingPlan || shipping.FromShipping == null) return cycle;
+
+            do
             {
                 cycle.Add(shipping);
                 shipping = shipping.FromShipping;
-            }
-            cycle.Add(shippingPlan);
+            } while (shipping != shippingPlan);
 
             return cycle;
         }

@@ -13,8 +13,6 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         public int SupplierId { get; }
         public int ConsumerId { get; }
 
-        public bool Possible { get; } = true;
-
         #region Potencial helper
         public bool IsBase { get; set; } = false;
         public int Delta { get; set; } = 0;
@@ -23,7 +21,8 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         #region Cycle helper
         public bool Processed { get; set; }
         public bool Visited { get; set; }
-        public ShippingPlan FromShipping { get; set; }
+        public bool? Direction { get; set; }
+        public ShippingPlan FromShipping { get; set; }        
         #endregion
 
         public ShippingPlan(int supplierId, int consumerId, Supplier supplier, Consumer consumer) : base(supplier, consumer)
@@ -31,13 +30,12 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             SupplierId = supplierId;
             ConsumerId = consumerId;
 
-            Possible = Supplier.CheckConsumer(Consumer);
             Cost = CalculateCost();
         }
 
         public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            if (!Possible || !IsBase || Cost > MaxCost || Number == 0) return;
+            if (Number == 0 || Cost > MaxCost) return;
 
             if (Supplier.IsInitialAction)
                 Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
@@ -45,8 +43,6 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         private int CalculateCost()
         {
-            if (!Possible) return int.MaxValue;
-
             int supplierCost = Supplier.CalculateCost(Consumer);
             int consumerCost = Consumer.CalculateCost(Supplier);
             if (supplierCost == int.MaxValue || consumerCost == int.MaxValue) return int.MaxValue;
