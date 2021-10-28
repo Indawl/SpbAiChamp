@@ -45,7 +45,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         {
             int supplierCost = Supplier.CalculateCost(Consumer);
             int consumerCost = Consumer.CalculateCost(Supplier);
-            if (supplierCost == int.MaxValue || consumerCost == int.MaxValue) return int.MaxValue;
+            if ((long)supplierCost + consumerCost > int.MaxValue) return int.MaxValue;
 
             return supplierCost + consumerCost;
         }

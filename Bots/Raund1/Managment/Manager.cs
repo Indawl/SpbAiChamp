@@ -18,7 +18,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         #region Game's attributes
         public Game Game { get; private set; }
-        public int DurationQuarter { get; private set; } = 10;
+        public GameLog GameLog { get; set; } = new GameLog();
         #endregion
 
         #region Graph's
@@ -72,17 +72,17 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Dictionary<BuildingType, BuildingDetail> BuildingDetails { get; private set; }
         public Dictionary<int, PlanetDetail> MyPlanets { get; set; }
         public PlanetDetail CapitalPlanet { get; set; }
-        public int LastCountMyPlanets { get; set; } = 0;
-        public static bool IsRefreshBrunchBuildings { get; set; } = true;
         public double TransportTax { get; set; } = 1.0;
 
         public Dictionary<Resource, TransportTask> TransportTasks { get; set; }
         public TransportTask TransportTaskWorker { get; set; }
         #endregion
+        
+        public bool IsRefresh => GameLog.IsChanged;
 
         public Manager GetNewManager()
         {
-            LastCountMyPlanets = MyPlanets?.Count ?? 0;
+            GameLog = new GameLog(GameLog);
             return CurrentManager;
         }
 
@@ -111,7 +111,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                     BuildingDetails[planet.Building.Value.BuildingType].Planets.Add(planet.Id);
 
                 if (!Orders.ContainsKey(planet.Id))
-                    Orders[planet.Id] = new Order(planet.Id, Game.CurrentTick, Game.CurrentTick);
+                    Orders[planet.Id] = new Order(planet.Id);
             }
 
             // Division territory
@@ -135,9 +135,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                         ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].NumberOut += buildingDetail.BuildingProperties.ProduceAmount;
                 }
             }
-
-            // Need refresh brunch buildings?
-            IsRefreshBrunchBuildings = LastCountMyPlanets != MyPlanets.Count;
 
             // Get Capital planet
             GetCapitalPlanet();
@@ -173,71 +170,32 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         public void ProcessOrder()
         {
-            foreach (var planetDetail in PlanetDetails.Values.Where(_ => Orders[_.Planet.Id].TickEnd <= Game.CurrentTick))
-                Orders[planetDetail.Planet.Id] = new Order(planetDetail.Planet.Id, Game.CurrentTick, Game.CurrentTick);
-
-            // Building brunch
-            if (IsRefreshBrunchBuildings)
-                RefreshBrunchBuildings();
+            // Refresh
+            if (IsRefresh) RefreshOrders();
+            else UpdateStateOrders();
 
             // Create orders for factory
             foreach (var planetDetail in PlanetDetails.Values)
-            {
-                var order = Orders[planetDetail.Planet.Id];
-                var buildingType = (order.BuildingType.HasValue && IsRefreshBrunchBuildings) ? order.BuildingType : planetDetail.Planet.Building?.BuildingType ?? null;
-
-                // Building needs
-                if (buildingType.HasValue)
-                {
-                    var buildingDetail = BuildingDetails[buildingType.Value];
-
-                    // For work in factory (in exist building)
-                    if (!order.BuildingType.HasValue)
-                        order.Number = buildingDetail.BuildingProperties.MaxWorkers;
-
-                    // For resources
-                    foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
-                    {
-                        var resourceDetail = ResourceDetails[resource.Key];
-                        var buildingDetails = BuildingDetails[resourceDetail.BuildingType];
-
-                        // Get stock
-                        planetDetail.Planet.Resources.TryGetValue(resource.Key, out var stock);
-
-                        // No planets, try min, maybe we have resources
-                        if (buildingDetails.Planets.Count > 0)
-                        {
-                            int number = stock + DurationQuarter * resource.Value;
-
-                            if (order.Resources.ContainsKey(resource.Key))
-                                order.Resources[resource.Key] += number;
-                            else order.Resources.Add(resource.Key, number);
-
-                            order.TickEnd += DurationQuarter;
-                        } // here no planet!!!
-                        else if (resourceDetail.Number > 0 || stock > 0)
-                            order.Resources.Add(resource.Key, stock + resourceDetail.Number);
-                    }
-                }
-            }
+                if (Orders[planetDetail.Planet.Id].TickStart == Game.CurrentTick)
+                    Orders[planetDetail.Planet.Id].CreateResourceOrder(planetDetail);
         }
 
-        private void RefreshBrunchBuildings()
+        private void UpdateStateOrders()
         {
-            foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
-                Orders[order.PlanetId] = new Order(order.PlanetId, Game.CurrentTick, Game.CurrentTick);
+            foreach (var planetDetail in PlanetDetails.Values.Where(_ => Orders[_.Planet.Id].TickEnd <= Game.CurrentTick))
+                Orders[planetDetail.Planet.Id] = new Order(planetDetail.Planet.Id);
+        }
+
+        private void RefreshOrders()
+        {
+            foreach (var order in Orders.Values)
+                Orders[order.PlanetId] = new Order(order.PlanetId);
 
             foreach (BuildingType buildingType in Enum.GetValues(typeof(BuildingType)))
                 if (BuildingDetails.ContainsKey(buildingType))
                 {
                     var planetId = GetPlanetForBuilding(buildingType);
-                    if (planetId.HasValue)
-                    {
-                        Orders[planetId.Value].BuildingType = buildingType;
-                        Orders[planetId.Value].Resources = new Dictionary<Resource, int>(BuildingDetails[buildingType].BuildingProperties.BuildResources);
-                        Orders[planetId.Value].Number = Math.Max(0, BuildingDetails[buildingType].BuildingProperties.MaxWorkers - BuildingDetails[buildingType].BuildingProperties.BuildResources.Values.Sum());
-                        Orders[planetId.Value].TickEnd = Game.MaxTickCount;
-                    }
+                    if (planetId.HasValue) Orders[planetId.Value].CreateBuildingOrder(buildingType);
                 }
         }
 
@@ -270,8 +228,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 foreach (var resource in resources.Keys)
                     if (BuildingDetails[ResourceDetails[resource].BuildingType].Planets.Count > 0)
                         planetFrom.AddRange(BuildingDetails[ResourceDetails[resource].BuildingType].Planets);
-                if (planetFrom.Count == 0) planetFrom.Add(CapitalPlanet.Planet.Id);
-
 
                 // To
                 List<int> planetTo = new List<int>();
@@ -279,11 +235,15 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
                     if (BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType].Planets.Count > 0)
                         planetTo.AddRange(BuildingDetails[ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].BuildingType].Planets);
-                if (planetTo.Count == 0) planetTo.Add(CapitalPlanet.Planet.Id);
 
                 // Find min
-                int dist = planetFrom.Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id))
-                         + planetTo.Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
+                if (planetFrom.Count + planetTo.Count == 0)
+                    planetFrom.Add(CapitalPlanet.Planet.Id);
+
+                int dist = 0;
+                if (planetFrom.Count > 0) dist += planetFrom.Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
+                if (planetTo.Count > 0) dist += planetTo.Min(_ => PlanetDetails[_].ShortestWay.GetDistance(planetDetail.Planet.Id));
+
                 if (dist < minDist)
                 {
                     planetId = planetDetail.Planet.Id;
