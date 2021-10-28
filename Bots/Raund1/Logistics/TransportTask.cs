@@ -52,13 +52,15 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 #endif
 
             // Find potencial
+            HashSet<ShippingPlan> processedPlans = new HashSet<ShippingPlan>();
+
             for (int i = 0; i < 100 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
          //   for (int i = 0; CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
 #if MYDEBUG
                 , CountRedist++
 #endif
                 )
-                if (!Redistribution(optimalPlans)) break;
+                if (!Redistribution(optimalPlans, processedPlans)) break;
 
 #if MYDEBUG
             BaseCountAfter = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
@@ -149,7 +151,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             return optimalPlans.Count > 0;
         }
 
-        private bool Redistribution(List<ShippingPlan> optimalPlans)
+        private bool Redistribution(List<ShippingPlan> optimalPlans, HashSet<ShippingPlan> processedPlans)
         {
             var shippingPlans = ShippingPlans.Cast<ShippingPlan>().ToList();
 
@@ -164,7 +166,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                     _.Direction = null;
                 });
 
-                var cycle = FindCycle(optimalPlan);
+                var cycle = FindCycleSimple(optimalPlan, processedPlans);
                 if (cycle.Count < 4) continue;
 
                 var cycleMinus = cycle.Where(_ => _.Direction != optimalPlan.Direction).ToList();
@@ -179,23 +181,46 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                     cycle[i].Number += sign * min;
             }
 
+            processedPlans.Add(optimalPlans.FirstOrDefault());
+
             return optimalPlans.Exists(_ => _.IsBase);
         }
 
-        private List<ShippingPlan> FindCycle(ShippingPlan shippingPlan)
+        private List<ShippingPlan> FindCycleSimple(ShippingPlan shippingPlan, HashSet<ShippingPlan> processedPlans)
+        {
+            List<ShippingPlan> cycle = new List<ShippingPlan>();
+            shippingPlan.Visited = false;
+
+            var shippingPlans = ShippingPlans.Cast<ShippingPlan>().Where(_=>_.IsBase).ToList();
+            shippingPlans.Sort((a, b) => b.Cost.CompareTo(a.Cost));
+
+            foreach (var shipping in shippingPlans)
+            {
+
+            }
+
+            return cycle;
+        }
+
+        private List<ShippingPlan> FindCycle(ShippingPlan shippingPlan, HashSet<ShippingPlan> processedPlans)
         {
             List<ShippingPlan> cycle = new List<ShippingPlan>();
             shippingPlan.Visited = false;
 
             Queue<ShippingPlan> processShippings = new Queue<ShippingPlan>();
             processShippings.Enqueue(shippingPlan);
+            //Stack<ShippingPlan> processShippings = new Stack<ShippingPlan>();
+            //processShippings.Push(shippingPlan);
 
             ShippingPlan shipping = null;
 
             while (processShippings.Count > 0)
             {
                 shipping = processShippings.Dequeue();
+                //shipping = processShippings.Pop();
                 if (shipping.Visited) continue;
+
+                if (processedPlans.Contains(shipping) && shipping.Direction == true) continue;
 
                 if (!shipping.Direction.HasValue)
                     shipping.Direction = true;
@@ -207,9 +232,11 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 if (shipping.Direction.Value)
                 {
                     for (int j = 0; j < Consumers.Count; j++)
-                        if (j != shipping.ConsumerId && !ShippingPlans[shipping.SupplierId, j].Visited)
+                        if ((shipping == shippingPlan || j == shippingPlan.ConsumerId) &&
+                            j != shipping.ConsumerId && !ShippingPlans[shipping.SupplierId, j].Visited)
                         {
                             processShippings.Enqueue(ShippingPlans[shipping.SupplierId, j]);
+                            //processShippings.Push(ShippingPlans[shipping.SupplierId, j]);
                             ShippingPlans[shipping.SupplierId, j].FromShipping = shipping;
                             ShippingPlans[shipping.SupplierId, j].Direction = !shipping.Direction.Value;
                         }
@@ -220,6 +247,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                         if (i != shipping.SupplierId && !ShippingPlans[i, shipping.ConsumerId].Visited)
                         {
                             processShippings.Enqueue(ShippingPlans[i, shipping.ConsumerId]);
+                            //processShippings.Push(ShippingPlans[i, shipping.ConsumerId]);
                             ShippingPlans[i, shipping.ConsumerId].FromShipping = shipping;
                             ShippingPlans[i, shipping.ConsumerId].Direction = !shipping.Direction.Value;
                         }

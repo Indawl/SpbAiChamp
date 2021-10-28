@@ -25,7 +25,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                     if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
                     {
                         var resourceDetail = Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value];
-                        cost += resourceDetail.KoefInOut * Quantity * buildingDetail.BuildingProperties.ProduceScore / buildingDetail.BuildingProperties.ProduceAmount;
+                        cost += resourceDetail.KoefInOut * buildingDetail.BuildingProperties.ProduceScore / buildingDetail.BuildingProperties.ProduceAmount;
                     }
                 }
             }

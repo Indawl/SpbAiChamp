@@ -10,7 +10,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
 
         public int Number { get; set; }
         public int? Potential { get; set; }
-        public int countBase { get; set; }        
+        public int countBase { get; set; }
 
         public Supplier(int planetId, int number, Resource? resource = null, int delay = 0) :
             base(planetId, number, resource, delay)
@@ -18,9 +18,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
             Number = number;
         }
 
-        public virtual int CalculateCost(Consumer consumer) 
-            => (int)(Quantity * Manager.CurrentManager.PlanetDetails[consumer.PlanetId].ShortestWay.GetDistance(PlanetId)
-                              * Manager.CurrentManager.TransportTax);
-        
+        public virtual int CalculateCost(Consumer consumer)
+            => (int)(Manager.CurrentManager.TransportTax * (Manager.CurrentManager.PlanetDetails[consumer.PlanetId].ShortestWay.GetDistance(PlanetId) + Delay));
     }
 }

@@ -35,7 +35,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
             {
                 var resourceDetail = Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value];
 
-                cost += resourceDetail.KoefOutIn * Quantity * buildingDetail.BuildingProperties.ProduceScore / buildingDetail.BuildingProperties.ProduceAmount;
+                cost += resourceDetail.KoefOutIn * buildingDetail.BuildingProperties.ProduceScore / buildingDetail.BuildingProperties.ProduceAmount;
             }
 
             return (int)cost;
