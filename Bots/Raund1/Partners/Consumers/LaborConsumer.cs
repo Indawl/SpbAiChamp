@@ -14,20 +14,18 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         {
             double cost = 0.0;
 
-            if (Supplier == null)
+            if (Supplier == null) // for resources is free
             {
                 var planetDetail = Manager.CurrentManager.PlanetDetails[PlanetId];
-                if (planetDetail.Planet.Building.HasValue)
+                var buildingType = planetDetail.Planet.Building?.BuildingType ?? Manager.CurrentManager.Orders[PlanetId].BuildingType;
+
+                if (buildingType.HasValue)
                 {
-                    var buildingDetail = Manager.CurrentManager.BuildingDetails[planetDetail.Planet.Building.Value.BuildingType];
+                    var buildingDetail = Manager.CurrentManager.BuildingDetails[buildingType.Value];
                     if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
                     {
                         var resourceDetail = Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value];
-                        if (resourceDetail.NumberOut == 0) return 0;
-
-                        var buildingType = Manager.CurrentManager.BuildingDetails[resourceDetail.BuildingType];
-
-                        cost += resourceDetail.KoefInOut * Quantity * buildingType.BuildingProperties.ProduceScore * buildingType.BuildingProperties.ProduceAmount;
+                        cost += resourceDetail.KoefInOut * Quantity * buildingDetail.BuildingProperties.ProduceScore / buildingDetail.BuildingProperties.ProduceAmount;
                     }
                 }
             }

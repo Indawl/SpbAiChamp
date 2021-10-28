@@ -13,15 +13,14 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Dictionary<int, Building?> planetInfos = new Dictionary<int, Building?>();
 
         public GameLog() { }
-        public GameLog(GameLog gameLog)
-        {
-            OldGameLog = gameLog;
+        public GameLog(GameLog gameLog) => OldGameLog = gameLog;
 
-            if (Manager.CurrentManager.MyPlanets != null)
-                foreach (var planet in Manager.CurrentManager.MyPlanets.Values
-                    .Where(_ => _.Planet.Building.HasValue
-                             || Manager.CurrentManager.Orders[_.Planet.Id].BuildingType.HasValue))
-                    planetInfos[planet.Planet.Id] = planet.Planet.Building;
+        public void Invalidate()
+        {
+            foreach (var planet in Manager.CurrentManager.MyPlanets.Values
+                .Where(_ => _.Planet.Building.HasValue
+                         || Manager.CurrentManager.Orders[_.Planet.Id].BuildingType.HasValue))
+                planetInfos[planet.Planet.Id] = planet.Planet.Building;
         }
 
         public bool IsChanged => !planetInfos.SequenceEqual(OldGameLog.planetInfos);

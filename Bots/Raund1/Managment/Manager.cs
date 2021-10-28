@@ -13,7 +13,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
     public class Manager
     {
         #region Static Attributes
-        public static Manager CurrentManager { get; } = new Manager();        
+        public static Manager CurrentManager { get; } = new Manager();
         #endregion
 
         #region Game's attributes
@@ -46,6 +46,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             return graph;
         }
+
         private void DivisionTerritory()
         {
             // Initialize
@@ -76,8 +77,9 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         public Dictionary<Resource, TransportTask> TransportTasks { get; set; }
         public TransportTask TransportTaskWorker { get; set; }
+        public TransportTask TransportTask(Resource? resource) => resource.HasValue ? TransportTasks[resource.Value] : TransportTaskWorker;
         #endregion
-        
+
         public bool IsRefresh => GameLog.IsChanged;
 
         public Manager GetNewManager()
@@ -143,17 +145,14 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             if (Game.FlyingWorkerGroups.Length != Game.MaxFlyingWorkerGroups)
                 TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - Game.FlyingWorkerGroups.Length);
 
-            foreach (var resourceDetail in ResourceDetails.Values)
-            {
-                if (resourceDetail.NumberOut != 0) resourceDetail.KoefInOut = (double)resourceDetail.NumberIn / resourceDetail.NumberOut;
-                if (resourceDetail.NumberIn != 0) resourceDetail.KoefOutIn = (double)resourceDetail.NumberOut / resourceDetail.NumberIn;
-            }    
+            // Log
+            GameLog.Invalidate();
         }
 
         private void GetCapitalPlanet()
         {
-            int x = MyPlanets.Values.Sum(_ => _.Planet.X) / PlanetDetails.Count;
-            int y = MyPlanets.Values.Sum(_ => _.Planet.Y) / PlanetDetails.Count;
+            int x = (int)MyPlanets.Values.Average(_ => _.Planet.X);
+            int y = (int)MyPlanets.Values.Average(_ => _.Planet.Y);
             int minDist = int.MaxValue;
 
             CapitalPlanet = PlanetDetails.Values.First();
@@ -170,14 +169,30 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         public void ProcessOrder()
         {
+            UpdateStateOrders();
+
             // Refresh
             if (IsRefresh) RefreshOrders();
-            else UpdateStateOrders();
 
             // Create orders for factory
             foreach (var planetDetail in PlanetDetails.Values)
                 if (Orders[planetDetail.Planet.Id].TickStart == Game.CurrentTick)
                     Orders[planetDetail.Planet.Id].CreateResourceOrder(planetDetail);
+
+            // Some properties
+            foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
+                foreach (var resource in BuildingDetails[order.BuildingType.Value].BuildingProperties.BuildResources)
+                    ResourceDetails[resource.Key].NumberIn += resource.Value;
+
+            foreach (var resourceDetail in ResourceDetails.Values)
+            {
+                if (resourceDetail.NumberOut != 0) resourceDetail.KoefInOut = (double)resourceDetail.NumberIn / resourceDetail.NumberOut;
+                else if (resourceDetail.NumberIn == 0) resourceDetail.KoefInOut = 1.0;
+                else resourceDetail.KoefInOut = 0;
+                if (resourceDetail.NumberIn != 0) resourceDetail.KoefOutIn = (double)resourceDetail.NumberOut / resourceDetail.NumberIn;
+                else if (resourceDetail.NumberOut == 0) resourceDetail.KoefOutIn = 1.0;
+                else resourceDetail.KoefOutIn = 0;
+            }
         }
 
         private void UpdateStateOrders()
@@ -188,7 +203,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         private void RefreshOrders()
         {
-            foreach (var order in Orders.Values)
+            foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
                 Orders[order.PlanetId] = new Order(order.PlanetId);
 
             foreach (BuildingType buildingType in Enum.GetValues(typeof(BuildingType)))
@@ -312,6 +327,51 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 suppliers.Add(new LaborSupplier(flyingWorkerGroups.NextPlanet, flyingWorkerGroups.Number, flyingWorkerGroups.NextPlanetArrivalTick - Game.CurrentTick));
             else
                 consumers.Add(new EnemyConsumer(flyingWorkerGroups.NextPlanet, flyingWorkerGroups.Number, flyingWorkerGroups.NextPlanetArrivalTick - Game.CurrentTick));
+        }
+
+        public void NormalizePartners(List<Supplier> suppliers, List<Consumer> consumers)
+        {
+            Dictionary<Resource, int> resources = new Dictionary<Resource, int>();
+            int number = 0;
+
+            // Get all suppliers quotation
+            foreach (Supplier supplier in suppliers)
+                if (supplier.Resource.HasValue)
+                {
+                    if (resources.ContainsKey(supplier.Resource.Value))
+                        resources[supplier.Resource.Value] += supplier.Number;
+                    else
+                        resources.Add(supplier.Resource.Value, supplier.Number);
+                }
+                else number += supplier.Number;
+
+            // Get all consumers needs
+            foreach (Consumer consumer in consumers)
+                if (consumer.Resource.HasValue)
+                {
+                    if (resources.ContainsKey(consumer.Resource.Value))
+                        resources[consumer.Resource.Value] -= consumer.Number;
+                    else
+                        resources.Add(consumer.Resource.Value, -consumer.Number);
+                }
+                else number -= consumer.Number;
+
+            // Add dummy partners
+            foreach (var resource in resources)
+                if (resource.Value > 0)
+                    consumers.Add(new DummyConsumer(resource.Value, resource.Key));
+                else if (resource.Value < 0)
+                {
+                    var supplier = new DummySupplier(-resource.Value, resource.Key);
+                    suppliers.Add(supplier);
+                    number += resource.Value;
+                }
+
+            // And dummy workers
+            if (number > 0)
+                consumers.Add(new DummyConsumer(number));
+            else if (number < 0)
+                suppliers.Add(new DummySupplier(-number));
         }
     }
 }

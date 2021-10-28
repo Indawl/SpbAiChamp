@@ -24,17 +24,19 @@ namespace SpbAiChamp.Bots.Raund1
             // Get Suppliers and Consumers
             Manager.CurrentManager.GetPartners(out List<Supplier> suppliers, out List<Consumer> consumers);
 
-            // Get transport map
-            // For workers
-            Manager.CurrentManager.TransportTaskWorker = new TransportTask(
-                suppliers.Where(_ => !_.Resource.HasValue).ToList(),
-                consumers.Where(_ => !_.Resource.HasValue).ToList());
+            // Suppliers price must be = Consumers price
+            Manager.CurrentManager.NormalizePartners(suppliers, consumers);
 
-            // For resources
+            // Get transport map
             foreach (var resourceDetail in Manager.CurrentManager.ResourceDetails)
                 Manager.CurrentManager.TransportTasks[resourceDetail.Key] = new TransportTask(
                     suppliers.Where(_ => _.Resource == resourceDetail.Key).ToList(),
                     consumers.Where(_ => _.Resource == resourceDetail.Key).ToList());
+
+            // And For workers
+            Manager.CurrentManager.TransportTaskWorker = new TransportTask(
+                suppliers.Where(_ => !_.Resource.HasValue).ToList(),
+                consumers.Where(_ => !_.Resource.HasValue).ToList());
 
             // Get actions            
             Manager.CurrentManager.TransportTaskWorker.GetActions(moveActions, buildingActions);

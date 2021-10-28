@@ -16,11 +16,9 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
             double cost = 0.0;
 
             var resourceDetail = Manager.CurrentManager.ResourceDetails[Resource.Value];
-            if (resourceDetail.NumberIn == 0) return int.MaxValue;
-
             var buildingDetail = Manager.CurrentManager.BuildingDetails[resourceDetail.BuildingType];
 
-            cost += resourceDetail.KoefOutIn * Quantity * buildingDetail.BuildingProperties.ProduceScore;
+            cost += resourceDetail.KoefInOut * Quantity * buildingDetail.BuildingProperties.ProduceScore / buildingDetail.BuildingProperties.ProduceAmount;
 
             return (int)cost;
         }

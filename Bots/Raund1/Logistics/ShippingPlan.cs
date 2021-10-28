@@ -8,7 +8,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 {
     public class ShippingPlan : Shipping
     {
-        public int MaxCost { get; private set; } = int.MaxValue; // TO DO: fix value
+        public int MaxCost { get; private set; } = int.MaxValue / 2; // TO DO: fix value
 
         public int SupplierId { get; }
         public int ConsumerId { get; }
@@ -33,16 +33,18 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             Cost = CalculateCost();
         }
 
-        public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
+        public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions, bool isInitialAction = false)
         {
             if (Number == 0 || Cost > MaxCost) return;
 
-            if (Supplier.IsInitialAction)
+            if (Supplier.IsInitialAction || isInitialAction)
                 Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }
 
         private int CalculateCost()
         {
+            if (Supplier is DummySupplier || Consumer is DummyConsumer) return 0;
+
             int supplierCost = Supplier.CalculateCost(Consumer);
             int consumerCost = Consumer.CalculateCost(Supplier);
             if ((long)supplierCost + consumerCost > int.MaxValue) return int.MaxValue;

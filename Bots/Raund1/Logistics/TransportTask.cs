@@ -39,9 +39,6 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         private void CreateTransportMap()
         {
-            // Suppliers price must be = Consumers price
-            NormalizePartners();
-
             // Create shipping plan
             CreateShippingPlan();
 
@@ -55,8 +52,8 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 #endif
 
             // Find potencial
-            //for (int i = 0; i < 100000 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++)
-            for (int i = 0; CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
+            for (int i = 0; i < 100 && CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
+         //   for (int i = 0; CalculatePotencial(out List<ShippingPlan> optimalPlans); i++
 #if MYDEBUG
                 , CountRedist++
 #endif
@@ -66,47 +63,6 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 #if MYDEBUG
             BaseCountAfter = ShippingPlans.Cast<ShippingPlan>().Count(_ => _.IsBase);
 #endif
-        }
-
-        private void NormalizePartners()
-        {
-            Dictionary<Resource, int> resources = new Dictionary<Resource, int>();
-            int number = 0;
-
-            // Get all suppliers quotation
-            foreach (Supplier supplier in Suppliers)
-                if (supplier.Resource.HasValue)
-                {
-                    if (resources.ContainsKey(supplier.Resource.Value))
-                        resources[supplier.Resource.Value] += supplier.Number;
-                    else
-                        resources.Add(supplier.Resource.Value, supplier.Number);
-                }
-                else number += supplier.Number;
-
-            // Get all consumers needs
-            foreach (Consumer consumer in Consumers)
-                if (consumer.Resource.HasValue)
-                {
-                    if (resources.ContainsKey(consumer.Resource.Value))
-                        resources[consumer.Resource.Value] -= consumer.Number;
-                    else
-                        resources.Add(consumer.Resource.Value, -consumer.Number);
-                }
-                else number -= consumer.Number;
-
-            // Add dummy partners
-            foreach (var resource in resources)
-                if (resource.Value > 0)
-                    Consumers.Add(new DummyConsumer(resource.Value, resource.Key));
-                else if (resource.Value < 0)
-                    Suppliers.Add(new DummySupplier(-resource.Value, resource.Key));
-
-            // And dummy workers
-            if (number > 0)
-                Consumers.Add(new DummyConsumer(number));
-            else if (number < 0)
-                Suppliers.Add(new DummySupplier(-number));
         }
 
         private void CreateShippingPlan()

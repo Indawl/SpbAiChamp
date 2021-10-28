@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Managment;
 using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
+using SpbAiChamp.Bots.Raund1.Logistics;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
@@ -26,16 +28,36 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 moveActions.Add(new MoveAction(supplier.PlanetId, Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId), number, supplier.Resource));
             else if (Supplier != null)
             {
-                var transportTask = Supplier.Resource.HasValue ? Manager.CurrentManager.TransportTasks[Supplier.Resource.Value]
-                                                               : Manager.CurrentManager.TransportTaskWorker;
+                var transportTask = Manager.CurrentManager.TransportTask(Supplier.Resource);
 
                 int supplierId = transportTask.Suppliers.IndexOf(Supplier);
 
                 for (int j = 0; j < transportTask.Consumers.Count; j++)
-                    transportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions);
+                    transportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions, true);
             }
         }
 
-        public virtual int CalculateCost(Supplier supplier) => 0;
+        public virtual int CalculateCost(Supplier supplier)
+        {
+            double cost = 0.0;
+
+            if (Supplier != null)
+            {
+                var transportTask = Manager.CurrentManager.TransportTask(Supplier.Resource);
+
+                int supplierId = transportTask.Suppliers.IndexOf(Supplier);
+                int count = 0;
+
+                for (int j = 0; j < transportTask.Consumers.Count; j++)
+                    if (!(transportTask.ShippingPlans[supplierId, j].Consumer is DummyConsumer))
+                    {
+                        cost += transportTask.ShippingPlans[supplierId, j].Cost;
+                        count++;
+                    }
+                if (count > 0) cost /= count;
+            }
+
+            return (int)cost;
+        }
     }
 }
