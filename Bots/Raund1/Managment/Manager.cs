@@ -18,7 +18,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         #region Game's attributes
         public Game Game { get; private set; }
-        public GameLog GameLog { get; set; } = new GameLog();
         #endregion
 
         #region Graph's
@@ -80,11 +79,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public TransportTask TransportTask(Resource? resource) => resource.HasValue ? TransportTasks[resource.Value] : TransportTaskWorker;
         #endregion
 
-        public bool IsRefresh => GameLog.IsChanged;
-
         public Manager GetNewManager()
         {
-            GameLog = new GameLog(GameLog);
             return CurrentManager;
         }
 
@@ -144,9 +140,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             // Transport Tax
             if (Game.FlyingWorkerGroups.Length != Game.MaxFlyingWorkerGroups)
                 TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex).Count());
-
-            // Log
-            GameLog.Invalidate();
         }
 
         private void GetCapitalPlanet()
@@ -172,14 +165,14 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             UpdateStateOrders();
 
             // Refresh
-            if (IsRefresh) RefreshOrders();
+            RefreshOrders();
 
             // Create orders for factory
             foreach (var planetDetail in PlanetDetails.Values)
                 if (Orders[planetDetail.Planet.Id].TickStart == Game.CurrentTick)
                     Orders[planetDetail.Planet.Id].CreateResourceOrder(planetDetail);
 
-            // Some properties
+            // Some properties (Koef)
             foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
                 foreach (var resource in BuildingDetails[order.BuildingType.Value].BuildingProperties.BuildResources)
                     ResourceDetails[resource.Key].NumberIn += resource.Value;

@@ -33,12 +33,11 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             Cost = CalculateCost();
         }
 
-        public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions, bool isInitialAction = false)
+        public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
             if (Number == 0 || Cost > MaxCost) return;
 
-            if (Supplier.IsInitialAction || isInitialAction)
-                Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
+            Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }
 
         private int CalculateCost()

@@ -5,7 +5,6 @@
         public LaborSupplier(int planetId, int number, int delay = 0) :
             base(planetId, number, null, delay)
         {
-            IsInitialAction = true;
         }
     }
 }

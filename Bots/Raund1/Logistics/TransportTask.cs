@@ -168,6 +168,8 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 #if MYDEBUG
             long tp = MyStrategy.watch.ElapsedMilliseconds;
 #endif
+            List<ShippingPlan> newPlans = new List<ShippingPlan>();
+
             foreach (var optimalPlan in optimalPlans)
             {
 #if MYDEBUG
@@ -183,28 +185,31 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 int min = cycleMinus.Min(_ => _.Number);
 
                 cycleMinus.First(_ => _.Number == min).IsBase = false;
-                optimalPlan.IsBase = true;
+                newPlans.Add(optimalPlan);
 
                 for (int i = 0, sign = 1; i < cycle.Count; i++, sign *= -1)
                     cycle[i].Number += sign * min;
+
+                if (newPlans.Count > 5) break;
             }
 #if MYDEBUG
             Debug.DebugStrategy.TimeRedist += MyStrategy.watch.ElapsedMilliseconds - tp;
 #endif
-            return optimalPlans.Exists(_ => _.IsBase);
+            newPlans.ForEach(_ => _.IsBase = true);
+            return newPlans.Count > 0;
         }
 
         private List<ShippingPlan> FindCycle(ShippingPlan optimalPlan)
         {
             List<ShippingPlan> cycle = new List<ShippingPlan>();
 
-            //var shippingPlans = ShippingPlans.Cast<ShippingPlan>()
-            //    .Where(_ => (_.SupplierId == optimalPlan.SupplierId || _.ConsumerId == optimalPlan.ConsumerId)
-            //             && _.IsBase).ToList();
             List<ShippingPlan> shippingPlans = new List<ShippingPlan>(Suppliers.Count * Consumers.Count);
-            foreach (var shippingPlan in ShippingPlans)
-                if ((shippingPlan.SupplierId == optimalPlan.SupplierId || shippingPlan.ConsumerId == optimalPlan.ConsumerId) && shippingPlan.IsBase)
-                    shippingPlans.Add(shippingPlan);
+            for (int i = 0; i < Suppliers.Count; i++)
+                if (ShippingPlans[i, optimalPlan.ConsumerId].IsBase)
+                    shippingPlans.Add(ShippingPlans[i, optimalPlan.ConsumerId]);
+            for (int j = 0; j < Consumers.Count; j++)
+                if (ShippingPlans[optimalPlan.SupplierId, j].IsBase)
+                    shippingPlans.Add(ShippingPlans[optimalPlan.SupplierId, j]);
 
             shippingPlans.Sort((a, b) => b.Cost.CompareTo(a.Cost));
 

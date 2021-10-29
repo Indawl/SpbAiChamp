@@ -39,7 +39,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 int supplierId = transportTask.Suppliers.IndexOf(Supplier);
 
                 for (int j = 0; j < transportTask.Consumers.Count; j++)
-                    transportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions, true);
+                    transportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions);
             }
         }
 

@@ -6,8 +6,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
 {
     public class Supplier : Partner
     {
-        public bool IsInitialAction { get; protected set; } = false;
-
         public int Number { get; set; }
         public int? Potential { get; set; }
         public int countBase { get; set; }
