@@ -8,8 +8,9 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
         public DummySupplier(int number, Resource? resource = null) :
             base(0, number, resource)
         {
+            IsFake = true;
         }
 
-        public override int CalculateCost(Consumer consumer) => 0;
+        public override int CalculateCost(Consumer consumer) => 1;
     }
 }

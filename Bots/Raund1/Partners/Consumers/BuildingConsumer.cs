@@ -7,9 +7,9 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class BuildingConsumer : ResourceConsumer
     {
-        public BuildingType BuildingType { get; private set; }
+        public BuildingType? BuildingType { get; protected set; }
 
-        public BuildingConsumer(int planetId, BuildingType buildingType, Resource resource, int number) :
+        public BuildingConsumer(int planetId, int number, BuildingType? buildingType = null, Resource? resource = null) :
             base(planetId, number, resource, 0)
         {
             BuildingType = buildingType;
@@ -19,26 +19,13 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         {
             base.GetAction(supplier, number, moveActions, buildingActions);
 
-            if (!Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.HasValue)
-                buildingActions.Add(new BuildingAction(PlanetId, BuildingType));
-            else if (Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.Value.BuildingType != BuildingType)
-                buildingActions.Add(new BuildingAction(PlanetId, null));
-        }
-
-        public override int CalculateCost(Supplier supplier)
-        {
-            double cost = base.CalculateCost(supplier);
-
-            var buildingDetail = Manager.CurrentManager.BuildingDetails[BuildingType];
-
-            if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
+            if (BuildingType.HasValue)
             {
-                var resourceDetail = Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value];
-
-                cost += resourceDetail.KoefOutIn * buildingDetail.BuildingProperties.ProduceScore / buildingDetail.BuildingProperties.ProduceAmount;
+                if (!Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.HasValue)
+                    buildingActions.Add(new BuildingAction(PlanetId, BuildingType.Value));
+                else if (Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.Value.BuildingType != BuildingType.Value)
+                    buildingActions.Add(new BuildingAction(PlanetId, null));
             }
-
-            return (int)cost;
         }
 
         public override string ToString() => BuildingType.ToString() + base.ToString();

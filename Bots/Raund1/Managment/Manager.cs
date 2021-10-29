@@ -79,10 +79,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public TransportTask TransportTask(Resource? resource) => resource.HasValue ? TransportTasks[resource.Value] : TransportTaskWorker;
         #endregion
 
-        public Manager GetNewManager()
-        {
-            return CurrentManager;
-        }
+        public Manager GetNewManager() => CurrentManager;
 
         public void SetGame(Game game)
         {
@@ -134,12 +131,30 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 }
             }
 
+            foreach (var flyingWorkerGroup in Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex && _.Resource.HasValue))
+                ResourceDetails[flyingWorkerGroup.Resource.Value].NumberIn += flyingWorkerGroup.Number;
+
+            // Get initial supply and demand
+            GetInitialNumber(BuildingType.Replicator);
+
             // Get Capital planet
             GetCapitalPlanet();
 
             // Transport Tax
             if (Game.FlyingWorkerGroups.Length != Game.MaxFlyingWorkerGroups)
                 TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex).Count());
+        }
+
+        private void GetInitialNumber(BuildingType buildingType, int amount = 1)
+        {
+            var buildingProperties = BuildingDetails[buildingType].BuildingProperties;
+
+            if (buildingProperties.ProduceResource.HasValue)
+                ResourceDetails[buildingProperties.ProduceResource.Value].NumberInit += amount;
+
+            foreach (var workResource in buildingProperties.WorkResources)
+                for (int i = 0; i < amount; i++)
+                    GetInitialNumber(ResourceDetails[workResource.Key].BuildingType, workResource.Value);            
         }
 
         private void GetCapitalPlanet()
@@ -176,16 +191,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
                 foreach (var resource in BuildingDetails[order.BuildingType.Value].BuildingProperties.BuildResources)
                     ResourceDetails[resource.Key].NumberIn += resource.Value;
-
-            foreach (var resourceDetail in ResourceDetails.Values)
-            {
-                if (resourceDetail.NumberOut != 0) resourceDetail.KoefInOut = (double)resourceDetail.NumberIn / resourceDetail.NumberOut;
-                else if (resourceDetail.NumberIn == 0) resourceDetail.KoefInOut = 1.0;
-                else resourceDetail.KoefInOut = 0;
-                if (resourceDetail.NumberIn != 0) resourceDetail.KoefOutIn = (double)resourceDetail.NumberOut / resourceDetail.NumberIn;
-                else if (resourceDetail.NumberOut == 0) resourceDetail.KoefOutIn = 1.0;
-                else resourceDetail.KoefOutIn = 0;
-            }
         }
 
         private void UpdateStateOrders()
@@ -296,7 +301,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             foreach (var resource in Orders[planetDetail.Planet.Id].Resources)
                 if (order.BuildingType.HasValue)
-                    consumers.Add(new BuildingConsumer(order.PlanetId, order.BuildingType.Value, resource.Key, resource.Value));
+                    consumers.Add(new BuildingConsumer(order.PlanetId, resource.Value, order.BuildingType.Value, resource.Key));
                 else
                     consumers.Add(new ResourceConsumer(order.PlanetId, resource.Value, resource.Key, order.Delay));
         }
@@ -357,7 +362,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 {
                     var supplier = new DummySupplier(-resource.Value, resource.Key);
                     suppliers.Add(supplier);
-                    number += resource.Value;
+                    consumers.Add(new DummyConsumer(-resource.Value, null, supplier));
+                    number += resource.Value; // For Dummy consumers
                 }
 
             // And dummy workers

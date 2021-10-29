@@ -35,6 +35,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
+            if (Supplier.IsFake || Consumer.IsFake) return;
             if (Number == 0 || Cost > MaxCost) return;
 
             Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
@@ -42,7 +43,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         private int CalculateCost()
         {
-            if (Supplier is DummySupplier || Consumer is DummyConsumer) return 0;
+            if (Supplier.IsFake || Consumer.IsFake) return 1;
 
             int supplierCost = Supplier.CalculateCost(Consumer);
             int consumerCost = Consumer.CalculateCost(Supplier);

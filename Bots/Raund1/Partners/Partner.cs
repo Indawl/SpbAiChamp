@@ -8,10 +8,12 @@ namespace SpbAiChamp.Bots.Raund1.Partners
         public static int MaxId = 0;
         public int Id = ++MaxId;
 #endif
-        public int PlanetId { get; private set; }
-        public int Quantity { get; private set; }
-        public Resource? Resource { get; private set; }
-        public int Delay { get; private set; }
+        public int PlanetId { get; protected set; }
+        public int Quantity { get; protected set; }
+        public Resource? Resource { get; protected set; }
+        public int Delay { get; protected set; }
+
+        public bool IsFake { get; protected set; } = false;
                 
         public Partner(int planetId, int number, Resource? resource = null, int delay = 0)
         {

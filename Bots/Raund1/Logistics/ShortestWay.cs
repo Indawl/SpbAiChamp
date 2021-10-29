@@ -20,14 +20,14 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 #endif
         }
 
-        protected override int GetCost(Edge edge) => base.GetCost(edge) + Math.Max(0, Manager.CurrentManager.PlanetDetails[edge.toNode.id].Influence);
+        protected override int GetCost(Edge edge) => base.GetCost(edge) + Math.Max(0, -Manager.CurrentManager.PlanetDetails[edge.toNode.id].Influence);
 
         public int GetDistance(int planetId) => costAsFar[new Node(planetId)];
         public int GetNextPlanet(int planetId) => GetNextNode(new Node(planetId)).id;
         public int GetNextPlanetInv(int planetId) => cameFrom[new Node(planetId)].id;
         public int GetRealDistance(int planetId)
         {
-            if (!Distances.TryGetValue(planetId, out var distance))
+            if (!Distances.ContainsKey(planetId))
             {
                 Distances[planetId] = 0;
 
@@ -40,7 +40,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
                 }
             }
 
-            return distance;
+            return Distances[planetId];
         }
     }
 }

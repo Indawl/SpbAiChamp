@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Managment;
 using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
-using SpbAiChamp.Bots.Raund1.Logistics;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
@@ -55,7 +53,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 int count = 0;
 
                 for (int j = 0; j < transportTask.Consumers.Count; j++)
-                    if (!(transportTask.ShippingPlans[supplierId, j].Consumer is DummyConsumer))
+                    if (!transportTask.ShippingPlans[supplierId, j].Consumer.IsFake)
                     {
                         cost += transportTask.ShippingPlans[supplierId, j].Cost;
                         count++;
