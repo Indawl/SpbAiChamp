@@ -5,6 +5,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 {
     public class ResourceDetail
     {
+        public const int SCORE_SCALE = 2;
+
         public Resource Resource { get; }
         public int Number { get; } = 0;
 
@@ -13,6 +15,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public int NumberInit { get; set; } = 0;
 
         public BuildingType BuildingType { get; }
+        public int Score { get; }
 
         public ResourceDetail(Resource resource)
         {
@@ -22,22 +25,28 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 .First(_ => _.Value.ProduceResource.HasValue && _.Value.ProduceResource.Value == resource).Key;
 
             Number = Manager.CurrentManager.Game.Planets.Sum(_ => _.Resources.ContainsKey(Resource) ? _.Resources[Resource] : 0);
+
+            Score = Manager.CurrentManager.BuildingDetails[BuildingType].BuildingProperties.ProduceScore * SCORE_SCALE;
         }
 
-        public int GetCost(int planetId, bool proportionately = true)
+        public int GetCost(int planetId, bool proportionately = false)
         {
+            double k = 1;
+
+            if (proportionately)
+            {
+                var order = Manager.CurrentManager.Orders[planetId];
+                var full = order.Resources.Values.Sum();
+
+                k += (double)order.Resources[Resource] / full;
+            }
+
+            if (NumberOut != 0 && NumberInit != 0)
+                k *= (double)NumberIn / (NumberOut * NumberInit);
+
             var buildingDetail = Manager.CurrentManager.BuildingDetails[BuildingType];
 
-            if (NumberOut == 0) return 0;
-            if (NumberInit == 0) return buildingDetail.BuildingProperties.ProduceScore;
-
-            var order = Manager.CurrentManager.Orders[planetId];
-            var full = order.Resources.Values.Sum();
-            double k = 2;
-            if (proportionately && order.Resources.ContainsKey(Resource)) k += order.Resources[Resource] / full;
-
-            return (int)(NumberIn * buildingDetail.BuildingProperties.ProduceScore * k /
-                        (NumberOut * buildingDetail.BuildingProperties.ProduceAmount * NumberInit));
+            return (int)(k * Score / buildingDetail.BuildingProperties.ProduceAmount);
         }
     }
 }

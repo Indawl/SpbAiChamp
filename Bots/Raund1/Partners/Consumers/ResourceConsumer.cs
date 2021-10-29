@@ -14,7 +14,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         public override int CalculateCost(Supplier supplier)
         {
             if (Resource.HasValue)
-                return Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId);
+                return Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId, true);
             return 0;
         }
     }

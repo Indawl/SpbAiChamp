@@ -1,12 +1,14 @@
-﻿using SpbAiChamp.Bots.Raund1.Managment;
+﻿using SpbAiChamp.Model;
+using SpbAiChamp.Bots.Raund1.Managment;
 using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
-using System;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
-    public class EnemyConsumer : BuildingConsumer
+    public class EnemyConsumer : Consumer
     {
-        public EnemyConsumer(int planetId, int number, int delay = 0) : base(planetId, number)
+        public BuildingType? BuildingType { get; set; } = null;
+
+        public EnemyConsumer(int planetId, int number, int delay = 0) : base(planetId, number, null, delay)
         {
             Delay = delay;
 
@@ -21,10 +23,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
             if (!BuildingType.HasValue && !CheckInterseption(supplier)) return int.MaxValue;
 
             foreach (var resource in Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources.Keys)
-            {
-                Resource = resource;
-                cost += base.CalculateCost(supplier);
-            }
+                cost += Manager.CurrentManager.ResourceDetails[resource].GetCost(PlanetId);
 
             return cost;
         }

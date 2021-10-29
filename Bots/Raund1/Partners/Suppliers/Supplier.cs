@@ -16,7 +16,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
             Number = number;
         }
 
-        public virtual int CalculateCost(Consumer consumer)
-            => (int)(Manager.CurrentManager.TransportTax * (Manager.CurrentManager.PlanetDetails[consumer.PlanetId].ShortestWay.GetRealDistance(PlanetId) + Delay));
+        public virtual int CalculateCost(Consumer consumer) => Manager.CurrentManager.PlanetDetails[consumer.PlanetId].getTransportCost(PlanetId);
     }
 }

@@ -23,8 +23,8 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                     var buildingDetail = Manager.CurrentManager.BuildingDetails[buildingType.Value];
 
                     if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
-                        return Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].GetCost(PlanetId, false);
-                    else return buildingDetail.BuildingProperties.ProduceScore;
+                        return Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].GetCost(PlanetId);
+                    else return buildingDetail.BuildingProperties.ProduceScore * ResourceDetail.SCORE_SCALE;
                 }
             }
 
