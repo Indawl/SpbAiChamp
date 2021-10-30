@@ -131,8 +131,20 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 }
             }
 
-            foreach (var flyingWorkerGroup in Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex && _.Resource.HasValue))
-                ResourceDetails[flyingWorkerGroup.Resource.Value].NumberIn += flyingWorkerGroup.Number;
+            foreach (var resourceDetail in ResourceDetails.Values)
+            {
+                var buildingDetail = BuildingDetails[resourceDetail.BuildingType];
+                double number = (double)buildingDetail.BuildingProperties.MaxWorkers / buildingDetail.BuildingProperties.WorkAmount;
+
+                resourceDetail.NumberIn = (int)(number * resourceDetail.NumberIn);
+                resourceDetail.NumberOut = (int)(number * resourceDetail.NumberOut);
+
+                resourceDetail.Number = PlanetDetails.Values.Sum(_ => (_.Influence >= 0 &&
+                    _.Planet.Resources.ContainsKey(resourceDetail.Resource)) ? _.Planet.Resources[resourceDetail.Resource] : 0);
+            }
+
+            foreach (var flyingWorkerGroups in Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex && _.Resource.HasValue))
+                ResourceDetails[flyingWorkerGroups.Resource.Value].Number += flyingWorkerGroups.Number;
 
             // Get initial supply and demand
             GetInitialNumber(BuildingType.Replicator);
@@ -182,15 +194,20 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             // Refresh
             RefreshOrders();
 
+            // Add In for building resource
+            foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
+                ResourceDetails[Resource.Stone].NumberIn += BuildingDetails[order.BuildingType.Value].BuildingProperties.BuildResources[Resource.Stone];
+
             // Create orders for factory
-            foreach (var planetDetail in PlanetDetails.Values)
+            foreach (var planetDetail in PlanetDetails.Values.Where(_ => _.Influence >= 0))
+            {
                 if (Orders[planetDetail.Planet.Id].TickStart == Game.CurrentTick)
                     Orders[planetDetail.Planet.Id].CreateResourceOrder(planetDetail);
 
-            // Some properties (Koef)
-            foreach (var order in Orders.Values.Where(_ => _.BuildingType.HasValue))
-                foreach (var resource in BuildingDetails[order.BuildingType.Value].BuildingProperties.BuildResources)
-                    ResourceDetails[resource.Key].NumberIn += resource.Value;
+                // Subtract that we have for building
+                if (planetDetail.Planet.Resources.TryGetValue(Resource.Stone, out var value))
+                    ResourceDetails[Resource.Stone].NumberIn = Math.Max(0, ResourceDetails[Resource.Stone].NumberIn - value);
+            }
         }
 
         private void UpdateStateOrders()
@@ -291,8 +308,9 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 consumers.Add(new EnemyConsumer(planetDetail.Planet.Id, -planetDetail.WorkerCount));
 
             // Add resources
-            foreach (var resource in planetDetail.Planet.Resources)
-                GetPartners(suppliers, consumers, planetDetail.Planet.Id, resource.Key, resource.Value);
+            if (planetDetail.Influence >= 0)
+                foreach (var resource in planetDetail.Planet.Resources)
+                    GetPartners(suppliers, consumers, planetDetail.Planet.Id, resource.Key, resource.Value);
 
             // Add needs from order
             var order = Orders[planetDetail.Planet.Id];
@@ -300,10 +318,10 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 consumers.Add(new LaborConsumer(order.PlanetId, order.Number, order.Delay));
 
             foreach (var resource in Orders[planetDetail.Planet.Id].Resources)
-                if (order.BuildingType.HasValue)
+                if (order.BuildingType.HasValue && resource.Key == Resource.Stone)
                     consumers.Add(new BuildingConsumer(order.PlanetId, resource.Value, order.BuildingType.Value, resource.Key));
                 else
-                    consumers.Add(new ResourceConsumer(order.PlanetId, resource.Value, resource.Key, order.Delay));
+                    consumers.Add(new ResourceConsumer(order.PlanetId, resource.Value, resource.Key));
         }
 
         private void GetPartners(List<Supplier> suppliers, List<Consumer> consumers, int planetId, Resource resource, int number, int delay = 0)

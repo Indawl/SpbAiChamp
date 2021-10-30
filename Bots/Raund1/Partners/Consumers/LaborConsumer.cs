@@ -19,13 +19,9 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 var buildingType = order.BuildingType.HasValue ? order.BuildingType : planetDetail.Planet.Building?.BuildingType ?? null;
 
                 if (buildingType.HasValue)
-                {
-                    var buildingDetail = Manager.CurrentManager.BuildingDetails[buildingType.Value];
-
-                    if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
-                        return Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].GetCost(PlanetId);
-                    else return buildingDetail.BuildingProperties.ProduceScore * ResourceDetail.SCORE_SCALE;
-                }
+                    if (planetDetail.Planet.Building.HasValue)
+                        Manager.CurrentManager.BuildingDetails[buildingType.Value].GetCost(PlanetId, buildingType.Value);
+                    else return int.MaxValue;
             }
 
             return 0;

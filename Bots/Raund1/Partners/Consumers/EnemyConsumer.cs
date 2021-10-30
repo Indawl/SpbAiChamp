@@ -18,17 +18,20 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
         public override int CalculateCost(Supplier supplier)
         {
-            int cost = 0;
+            long cost = 0;
 
-            if (!BuildingType.HasValue && !CheckInterseption(supplier)) return int.MaxValue;
+            if (Delay > 0 && !BuildingType.HasValue)
+            {
+                var planetDetail = Manager.CurrentManager.PlanetDetails[PlanetId];
+                int dist = planetDetail.ShortestWay.GetRealDistance(supplier.PlanetId);
+                if (dist > Delay) return int.MaxValue;
+                cost += planetDetail.getTransportCost(Delay - dist);
+            }
 
             foreach (var resource in Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources.Keys)
                 cost += Manager.CurrentManager.ResourceDetails[resource].GetCost(PlanetId);
 
-            return cost;
+            return cost > int.MaxValue ? int.MaxValue : (int)cost;
         }
-
-        protected bool CheckInterseption(Supplier supplier)
-            => Delay == 0 || Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetRealDistance(supplier.PlanetId) <= Delay;
     }
 }

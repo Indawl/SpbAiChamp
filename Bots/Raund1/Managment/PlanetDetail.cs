@@ -23,6 +23,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             WorkerCount = planet.WorkerGroups.Sum(group => group.PlayerIndex == Manager.CurrentManager.Game.MyIndex ? group.Number : -group.Number);
         }
 
-        public int getTransportCost(int planetId, int delay = 0) => (int)(Manager.CurrentManager.TransportTax * (ShortestWay.GetRealDistance(planetId) + delay));
+        public int getTransportCost(int planetId, int delay) => getTransportCost(ShortestWay.GetRealDistance(planetId) + delay);
+        public int getTransportCost(int dist) => (int)(Manager.CurrentManager.TransportTax * dist);
+        //public int getTransportCost(int dist) => (int)(Manager.CurrentManager.TransportTax * dist * (Influence >= 0 ? 0 : 1));
     }
 }

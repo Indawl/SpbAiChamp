@@ -8,7 +8,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 {
     public class ShippingPlan : Shipping
     {
-        public int MaxCost { get; private set; } = int.MaxValue / 2; // TO DO: fix value
+        public int MaxCost { get; private set; } = int.MaxValue;
 
         public int SupplierId { get; }
         public int ConsumerId { get; }
@@ -51,5 +51,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
             return supplierCost + consumerCost;
         }
+
+        public override string ToString() => string.Format("{0} -> {1}: {2} {3}", SupplierId, ConsumerId, Cost, Consumer);
     }
 }

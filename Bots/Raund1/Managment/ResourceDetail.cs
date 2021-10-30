@@ -5,10 +5,10 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 {
     public class ResourceDetail
     {
-        public const int SCORE_SCALE = 2;
+        public const int SCORE_SCALE = 100;
 
         public Resource Resource { get; }
-        public int Number { get; } = 0;
+        public int Number { get; set; } = 0;
 
         public int NumberIn { get; set; } = 0;
         public int NumberOut { get; set; } = 0;
@@ -24,8 +24,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             BuildingType = Manager.CurrentManager.Game.BuildingProperties
                 .First(_ => _.Value.ProduceResource.HasValue && _.Value.ProduceResource.Value == resource).Key;
 
-            Number = Manager.CurrentManager.Game.Planets.Sum(_ => _.Resources.ContainsKey(Resource) ? _.Resources[Resource] : 0);
-
             Score = Manager.CurrentManager.BuildingDetails[BuildingType].BuildingProperties.ProduceScore * SCORE_SCALE;
         }
 
@@ -33,7 +31,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         {
             double k = 1;
 
-            if (proportionately)
+             if (proportionately)
             {
                 var order = Manager.CurrentManager.Orders[planetId];
                 var full = order.Resources.Values.Sum();
@@ -41,8 +39,16 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 k += (double)order.Resources[Resource] / full;
             }
 
-            if (NumberOut != 0 && NumberInit != 0)
-                k *= (double)NumberIn / (NumberOut * NumberInit);
+            if (NumberInit == 0) // Stone
+            {
+                if (NumberOut != 0) k = (double)NumberIn / NumberOut;
+            }
+            else
+            {
+                if (NumberInit != 0) k /= NumberInit;
+                if (NumberOut != 0) k *= (double)NumberIn / NumberOut;
+                else if (NumberIn != 0) return int.MaxValue;
+            }
 
             var buildingDetail = Manager.CurrentManager.BuildingDetails[BuildingType];
 
