@@ -20,7 +20,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
             if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
                 return Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].GetCost(planetId);
-            else return buildingDetail.BuildingProperties.ProduceScore * ResourceDetail.SCORE_SCALE;
+            else return 0;// buildingDetail.BuildingProperties.ProduceScore * ResourceDetail.SCORE_SCALE;
         }
     }
 }

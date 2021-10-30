@@ -5,7 +5,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 {
     public class ResourceDetail
     {
-        public const int SCORE_SCALE = 100;
+        public const int SCORE_SCALE = 10;
 
         public Resource Resource { get; }
         public int Number { get; set; } = 0;
