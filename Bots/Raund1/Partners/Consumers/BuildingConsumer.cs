@@ -34,10 +34,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 if (Manager.CurrentManager.PlanetDetails[planetId].WorkerCount < buildingDetail.BuildingProperties.MaxWorkers)
                     return int.MaxValue;
 
-            long cost = (long)Manager.CurrentManager.BuildingDetails[BuildingType].GetCost(PlanetId, BuildingType)
-                      + Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId);
-            if (cost > int.MaxValue) return int.MaxValue;
-            return (int)cost;
+            return ToInt(Manager.CurrentManager.BuildingDetails[BuildingType].GetCost(PlanetId, BuildingType) + base.CalculateCost(supplier));
         }
     }
 }

@@ -3,7 +3,7 @@ using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
-    public class LaborConsumer : Consumer
+    public class LaborConsumer : SupplierConsumer
     {
         public LaborConsumer(int planetId, int number, int delay = 0, Supplier supplier = null) :
             base(planetId, number, null, delay, supplier)
@@ -12,19 +12,13 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
         public override int CalculateCost(Supplier supplier)
         {
-            if (Supplier == null)
-            {
-                var planetDetail = Manager.CurrentManager.PlanetDetails[PlanetId];
-                var order = Manager.CurrentManager.Orders[PlanetId];
-                var buildingType = order.BuildingType.HasValue ? order.BuildingType : planetDetail.Planet.Building?.BuildingType ?? null;
+            double cost = base.CalculateCost(supplier);
 
-                if (buildingType.HasValue)
-                    if (planetDetail.Planet.Building.HasValue)
-                        Manager.CurrentManager.BuildingDetails[buildingType.Value].GetCost(PlanetId, buildingType.Value);
-                    else return int.MaxValue;
-            }
+            var building = Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building;
+            if (building.HasValue)
+                cost += Manager.CurrentManager.BuildingDetails[building.Value.BuildingType].GetCost(PlanetId, building.Value.BuildingType);
 
-            return 0;
+            return ToInt(cost);
         }
     }
 }

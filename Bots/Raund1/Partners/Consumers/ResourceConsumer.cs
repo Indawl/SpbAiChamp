@@ -12,7 +12,14 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         }
 
         public override int CalculateCost(Supplier supplier)
-            => Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.HasValue ?
-               Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId, true) : int.MaxValue;
+        {
+            double cost = base.CalculateCost(supplier);
+
+            var building = Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building;
+            if (building.HasValue)
+                cost += Manager.CurrentManager.BuildingDetails[building.Value.BuildingType].GetCost(PlanetId, building.Value.BuildingType);
+
+            return ToInt(cost);
+        }
     }
 }

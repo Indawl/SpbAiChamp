@@ -13,12 +13,17 @@ namespace SpbAiChamp.Bots.Raund1.Partners
         public Resource? Resource { get; protected set; }
         public int Delay { get; protected set; }
 
+        public int Number { get; set; }
+
+        public int? Potential { get; set; }
+        public int countBase { get; set; }
+
         public bool IsFake { get; protected set; } = false;
                 
         public Partner(int planetId, int number, Resource? resource = null, int delay = 0)
         {
             PlanetId = planetId;
-            Quantity = number;
+            Quantity = Number = number;
             Resource = resource;
             Delay = delay;
         }

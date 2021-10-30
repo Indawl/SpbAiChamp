@@ -7,61 +7,26 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class Consumer : Partner
     {
-        public int Number { get; set; }
-        public Supplier Supplier { get; protected set; }
-
-        public int? Potential { get; set; }
-        public int countBase { get; set; }
-
-        public Consumer(int planetId, int number, Resource? resource = null, int delay = 0, Supplier supplier = null) :
+        public Consumer(int planetId, int number, Resource? resource = null, int delay = 0) :
             base(planetId, number, resource, delay)
         {
-            Number = number;
-            Supplier = supplier;
         }
 
         public virtual void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            if (supplier.PlanetId != PlanetId)
-            {
-                if (supplier.Delay == 0)
-                    moveActions.Add(new MoveAction(supplier.PlanetId,
-                        Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId),
-                        number, supplier.Resource));
+            if (supplier.PlanetId == PlanetId || supplier.Delay > 0) return;
 
-            }
-            else if (Supplier != null)
-            {
-                var transportTask = Manager.CurrentManager.TransportTask(Supplier.Resource);
-
-                int supplierId = transportTask.Suppliers.IndexOf(Supplier);
-
-                for (int j = 0; j < transportTask.Consumers.Count; j++)
-                    transportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions);
-            }
+            moveActions.Add(new MoveAction(supplier.PlanetId,
+                Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId),
+                number, supplier.Resource));
         }
 
         public virtual int CalculateCost(Supplier supplier)
-        {
-            double cost = 0.0;
+            => ToInt(ResourceCost + supplier.CalculateCost(this));
 
-            if (Supplier != null)
-            {
-                var transportTask = Manager.CurrentManager.TransportTask(Supplier.Resource);
-
-                int supplierId = transportTask.Suppliers.IndexOf(Supplier);
-                int count = 0;
-
-                for (int j = 0; j < transportTask.Consumers.Count; j++)
-                    if (!transportTask.ShippingPlans[supplierId, j].Consumer.IsFake)
-                    {
-                        cost += transportTask.ShippingPlans[supplierId, j].Cost;
-                        count++;
-                    }
-                if (count > 0) cost /= count;
-            }
-
-            return (int)cost;
-        }
+        protected double ResourceCost => Resource.HasValue ? Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId)
+                                                           : Manager.CurrentManager.BuildingDetails[BuildingType.Replicator].BuildingProperties.ProduceScore
+                                                           * ResourceDetail.SCORE_SCALE;
+        protected int ToInt(double value) => value > int.MaxValue ? int.MaxValue : (int)value;
     }
 }

@@ -33,7 +33,7 @@ namespace SpbAiChamp.Model
         /// Building on the planet
         /// </summary>
         public Model.Building? Building { get; set; }
-    
+
         public Planet(int id, int x, int y, Model.Resource? harvestableResource, Model.WorkerGroup[] workerGroups, System.Collections.Generic.IDictionary<Model.Resource, int> resources, Model.Building? building)
         {
             this.Id = id;

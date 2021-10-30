@@ -4,7 +4,7 @@ using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
-    public class DummyConsumer : Consumer
+    public class DummyConsumer : SupplierConsumer
     {
         public DummyConsumer(int number, Resource? resource = null, Supplier supplier = null) : 
             base(0, number, resource, 0, supplier)
