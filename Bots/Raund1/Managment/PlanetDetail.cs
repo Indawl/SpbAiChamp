@@ -24,7 +24,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         }
 
         public double getTransportCost(int planetId, int delay) => getTransportCost(ShortestWay.GetRealDistance(planetId) + delay);
-        //public double getTransportCost(int dist) => Manager.CurrentManager.TransportTax * dist;
-        public double getTransportCost(int dist) => Manager.CurrentManager.TransportTax * dist * (Influence >= 0 ? 0 : 1);
+        public double getTransportCost(int dist) => Manager.CurrentManager.TransportTax * dist;
+        //public double getTransportCost(int dist) => Manager.CurrentManager.TransportTax * dist * (Influence >= 0 ? 0 : 1);
     }
 }

@@ -22,11 +22,8 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         }
 
         public virtual int CalculateCost(Supplier supplier)
-            => ToInt(ResourceCost + supplier.CalculateCost(this));
+            => ToInt(supplier.CalculateCost(this) + (Resource.HasValue ? Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId, true, true) : 0));
 
-        protected double ResourceCost => Resource.HasValue ? Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId)
-                                                           : Manager.CurrentManager.BuildingDetails[BuildingType.Replicator].BuildingProperties.ProduceScore
-                                                           * ResourceDetail.SCORE_SCALE;
         protected int ToInt(double value) => value > int.MaxValue ? int.MaxValue : (int)value;
     }
 }

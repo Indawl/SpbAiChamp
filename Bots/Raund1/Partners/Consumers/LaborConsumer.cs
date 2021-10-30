@@ -16,7 +16,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
             var building = Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building;
             if (building.HasValue)
-                cost += Manager.CurrentManager.BuildingDetails[building.Value.BuildingType].GetCost(PlanetId, building.Value.BuildingType);
+                cost += BuildingDetail.GetCost(PlanetId, building.Value.BuildingType);
 
             return ToInt(cost);
         }

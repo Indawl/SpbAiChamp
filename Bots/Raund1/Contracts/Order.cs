@@ -8,7 +8,7 @@ namespace SpbAiChamp.Bots.Raund1.Contracts
 {
     public class Order
     {
-        public int DurationQuarter { get; set; } = 10;
+        public int DurationQuarter { get; set; } = 100;
 
         public int PlanetId { get; }
         public int TickStart { get; }

@@ -14,7 +14,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             BuildingProperties = buildingProperties;
         }
 
-        public double GetCost(int planetId, BuildingType buildingType)
+        public static double GetCost(int planetId = 0, BuildingType buildingType = BuildingType.Replicator)
         {
             var buildingDetail = Manager.CurrentManager.BuildingDetails[buildingType];
 

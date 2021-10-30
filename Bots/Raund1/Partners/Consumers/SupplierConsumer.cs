@@ -41,7 +41,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 int count = 0;
 
                 for (int j = 0; j < transportTask.Consumers.Count; j++)
-                    if (!transportTask.ShippingPlans[supplierId, j].Consumer.IsFake)
+                    if (!transportTask.ShippingPlans[supplierId, j].Consumer.IsFake && transportTask.ShippingPlans[supplierId, j].Cost < int.MaxValue)
                     {
                         cost += transportTask.ShippingPlans[supplierId, j].Cost;
                         count++;

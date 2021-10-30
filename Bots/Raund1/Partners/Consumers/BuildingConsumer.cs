@@ -23,18 +23,18 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
             if (!Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.HasValue)
                 buildingActions.Add(new BuildingAction(PlanetId, BuildingType));
-            else if (Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.Value.BuildingType != BuildingType)
-                buildingActions.Add(new BuildingAction(PlanetId, null));
+            //else if (Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building.Value.BuildingType != BuildingType)
+            //    buildingActions.Add(new BuildingAction(PlanetId, null));
         }
 
         public override int CalculateCost(Supplier supplier)
         {
             var buildingDetail = Manager.CurrentManager.BuildingDetails[BuildingType];
             foreach (var planetId in buildingDetail.Planets)
-                if (Manager.CurrentManager.PlanetDetails[planetId].WorkerCount < buildingDetail.BuildingProperties.MaxWorkers)
+                if (Manager.CurrentManager.PlanetDetails[planetId].WorkerCount < 0.8 * buildingDetail.BuildingProperties.MaxWorkers)
                     return int.MaxValue;
 
-            return ToInt(Manager.CurrentManager.BuildingDetails[BuildingType].GetCost(PlanetId, BuildingType) + base.CalculateCost(supplier));
+            return ToInt(BuildingDetail.GetCost(PlanetId, BuildingType) + base.CalculateCost(supplier));
         }
     }
 }

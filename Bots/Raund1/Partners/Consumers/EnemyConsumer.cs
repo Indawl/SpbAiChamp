@@ -19,13 +19,16 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 var planetDetail = Manager.CurrentManager.PlanetDetails[PlanetId];
                 int dist = planetDetail.ShortestWay.GetRealDistance(supplier.PlanetId);
                 if (dist > Delay) return int.MaxValue;
-                cost += planetDetail.getTransportCost(Delay - dist) * ResourceCost;
+                cost += planetDetail.getTransportCost(Delay - dist);
             }
 
             if (Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources.Count > 0)
                 foreach (var resource in Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources)
                     cost += Math.Max(cost, resource.Value * Manager.CurrentManager.ResourceDetails[resource.Key].GetCost(PlanetId))
                           / Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources.Count;
+
+            if (Manager.CurrentManager.PlanetDetails[PlanetId].Influence < 0)
+                cost += BuildingDetail.GetCost();
 
             return ToInt(cost + base.CalculateCost(supplier));
         }
