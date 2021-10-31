@@ -12,6 +12,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
         public override int CalculateCost(Supplier supplier)
         {
+            return int.MaxValue;
             double cost = 0;
 
             if (Delay > 0 && !Manager.CurrentManager.Game.Planets[PlanetId].Building.HasValue)

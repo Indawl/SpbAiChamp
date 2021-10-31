@@ -31,7 +31,8 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         {
             var buildingDetail = Manager.CurrentManager.BuildingDetails[BuildingType];
             foreach (var planetId in buildingDetail.Planets)
-                if (Manager.CurrentManager.PlanetDetails[planetId].WorkerCount < 0.8 * buildingDetail.BuildingProperties.MaxWorkers)
+                if (Manager.CurrentManager.PlanetDetails[planetId].WorkerCount < 0.8 * buildingDetail.BuildingProperties.MaxWorkers ||
+                    Manager.CurrentManager.PlanetDetails[planetId].Planet.Building.Value.Health < buildingDetail.BuildingProperties.MaxHealth)
                     return int.MaxValue;
 
             return ToInt(BuildingDetail.GetCost(PlanetId, BuildingType) + base.CalculateCost(supplier));

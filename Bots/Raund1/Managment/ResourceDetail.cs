@@ -10,9 +10,9 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Resource Resource { get; }
         public int Number { get; set; } = 0;
 
-        public int NumberIn { get; set; } = 0;
-        public int NumberOut { get; set; } = 0;
-        public int NumberInit { get; set; } = 0;
+        public double NumberIn { get; set; } = 0;
+        public double NumberOut { get; set; } = 0;
+        public double NumberInit { get; set; } = 0;
 
         public BuildingType BuildingType { get; }
         public int Score { get; }
@@ -45,11 +45,13 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 if (invert) k *= NumberIn / NumberOut;
                 else k *= NumberOut / NumberIn;
             }
-            else if (invert && NumberIn != 0 || !invert && NumberOut != 0) return int.MaxValue;
+            //else if (invert && NumberIn != 0 || !invert && NumberOut != 0) return int.MaxValue;
+            //else if (!invert && NumberIn != 0 || invert && NumberOut != 0) return 0;
 
             var buildingDetail = Manager.CurrentManager.BuildingDetails[BuildingType];
+            k *= (double)Score / buildingDetail.BuildingProperties.ProduceAmount;
 
-            return k * Score / buildingDetail.BuildingProperties.ProduceAmount;
+            return k > int.MaxValue ? int.MaxValue : k;
         }
     }
 }

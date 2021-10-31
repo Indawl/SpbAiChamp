@@ -122,12 +122,15 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 if (planetDetail.Planet.Building.HasValue)
                 {
                     var buildingDetail = BuildingDetails[planetDetail.Planet.Building.Value.BuildingType];
+                    var efficiency = planetDetail.Planet.Building.Value.Health < buildingDetail.BuildingProperties.MaxHealth ? 0 :
+                        (double)Math.Min(buildingDetail.BuildingProperties.MaxWorkers, planetDetail.WorkerCount)
+                                       / buildingDetail.BuildingProperties.MaxWorkers;
 
                     foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
-                        ResourceDetails[resource.Key].NumberIn += resource.Value;
+                        ResourceDetails[resource.Key].NumberIn += efficiency * resource.Value;
 
                     if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
-                        ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].NumberOut += buildingDetail.BuildingProperties.ProduceAmount;
+                        ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].NumberOut += efficiency * buildingDetail.BuildingProperties.ProduceAmount;
                 }
             }
 
@@ -153,8 +156,9 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             GetCapitalPlanet();
 
             // Transport Tax
-            if (Game.FlyingWorkerGroups.Length != Game.MaxFlyingWorkerGroups)
-                TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex).Count());
+            var flyingCount = Game.FlyingWorkerGroups.Count(_ => _.PlayerIndex == Game.MyIndex);
+            if (flyingCount == Game.MaxFlyingWorkerGroups) TransportTax = Game.MaxFlyingWorkerGroups;
+            else TransportTax = (double)Game.MaxFlyingWorkerGroups / (Game.MaxFlyingWorkerGroups - flyingCount);
         }
 
         private void GetInitialNumber(BuildingType buildingType, int amount = 1)
@@ -328,7 +332,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         {
             var warehouseSupplier = new WarehouseSupplier(planetId, number, resource, delay);
             suppliers.Add(warehouseSupplier);
-            consumers.Add(new LaborConsumer(planetId, number, delay, warehouseSupplier));
+            //consumers.Add(new LaborConsumer(planetId, number, delay, warehouseSupplier));
         }
 
         private void GetPartners(List<Supplier> suppliers, List<Consumer> consumers, FlyingWorkerGroup flyingWorkerGroups)
@@ -348,7 +352,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public void NormalizePartners(List<Supplier> suppliers, List<Consumer> consumers)
         {
             Dictionary<Resource, int> resources = new Dictionary<Resource, int>();
-            int number = 0;
+            //int number = 0;
 
             // Get all suppliers quotation
             foreach (Supplier supplier in suppliers)
@@ -359,7 +363,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                     else
                         resources.Add(supplier.Resource.Value, supplier.Number);
                 }
-                else number += supplier.Number;
+                //else number += supplier.Number;
 
             // Get all consumers needs
             foreach (Consumer consumer in consumers)
@@ -370,7 +374,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                     else
                         resources.Add(consumer.Resource.Value, -consumer.Number);
                 }
-                else number -= consumer.Number;
+                //else number -= consumer.Number;
 
             // Add dummy partners
             foreach (var resource in resources)
@@ -380,15 +384,15 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 {
                     var supplier = new DummySupplier(-resource.Value, resource.Key);
                     suppliers.Add(supplier);
-                    consumers.Add(new DummyConsumer(-resource.Value, null, supplier));
-                    number += resource.Value; // For Dummy consumers
+                    //consumers.Add(new DummyConsumer(-resource.Value, null, supplier));
+                    //number += resource.Value; // For Dummy consumers
                 }
 
             // And dummy workers
-            if (number > 0)
-                consumers.Add(new DummyConsumer(number));
-            else if (number < 0)
-                suppliers.Add(new DummySupplier(-number));
+            //if (number > 0)
+            //    consumers.Add(new DummyConsumer(number));
+            //else if (number < 0)
+            //    suppliers.Add(new DummySupplier(-number));
         }
     }
 }

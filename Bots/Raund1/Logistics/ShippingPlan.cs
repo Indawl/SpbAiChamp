@@ -8,7 +8,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 {
     public class ShippingPlan : Shipping
     {
-        public int MaxCost { get; private set; } = int.MaxValue;
+        public int MaxCost { get; private set; } = int.MaxValue / 2;
 
         public int SupplierId { get; }
         public int ConsumerId { get; }
@@ -41,7 +41,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }
 
-        private int CalculateCost() => Supplier.IsFake ? (int)Supplier.CalculateCost(Consumer) : Consumer.CalculateCost(Supplier);
+        private int CalculateCost() => Supplier.IsFake ? Supplier.CalculateCost(Consumer) : Consumer.CalculateCost(Supplier);
 
         public override string ToString() => string.Format("{0} -> {1}: {2} {3}", SupplierId, ConsumerId, Cost, Consumer);
     }

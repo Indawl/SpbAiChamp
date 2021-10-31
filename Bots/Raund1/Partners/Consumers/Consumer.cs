@@ -22,7 +22,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         }
 
         public virtual int CalculateCost(Supplier supplier)
-            => ToInt(supplier.CalculateCost(this) + (Resource.HasValue ? Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId, true, true) : 0));
+            => ToInt(supplier.CalculateCost(this) + (Resource.HasValue ? Manager.CurrentManager.ResourceDetails[Resource.Value].GetCost(PlanetId, true, true) : 1));
 
         protected int ToInt(double value) => value > int.MaxValue ? int.MaxValue : (int)value;
     }

@@ -43,15 +43,27 @@ namespace SpbAiChamp.Bots.Raund1
 #endif
 
             // Get transport map
+            var workerSuppliers = suppliers.Where(_ => !_.Resource.HasValue).ToList();
+            var workerConsumers = consumers.Where(_ => !_.Resource.HasValue).ToList();
+
             foreach (var resourceDetail in Manager.CurrentManager.ResourceDetails)
-                Manager.CurrentManager.TransportTasks[resourceDetail.Key] = new TransportTask(
-                    suppliers.Where(_ => _.Resource == resourceDetail.Key).ToList(),
-                    consumers.Where(_ => _.Resource == resourceDetail.Key).ToList());
+            {
+                var transportTask = Manager.CurrentManager.TransportTasks[resourceDetail.Key];
+                transportTask = new TransportTask(suppliers.Where(_ => _.Resource == resourceDetail.Key).ToList(),
+                                                   consumers.Where(_ => _.Resource == resourceDetail.Key).ToList());
+
+                foreach (var shippingPlan in transportTask.ShippingPlans)
+                    if (!shippingPlan.Supplier.IsFake && !shippingPlan.Consumer.IsFake && shippingPlan.Number > 0)
+                        workerConsumers.Add(new LaborConsumer(shippingPlan));
+            }
+
+            // Normalize
+            var number = workerSuppliers.Sum(_ => _.Number) - workerConsumers.Sum(_ => _.Number);
+            if (number > 0) consumers.Add(new DummyConsumer(number));
+            else if (number < 0) suppliers.Add(new DummySupplier(-number));
 
             // And For workers
-            Manager.CurrentManager.TransportTaskWorker = new TransportTask(
-                suppliers.Where(_ => !_.Resource.HasValue).ToList(),
-                consumers.Where(_ => !_.Resource.HasValue).ToList());
+            Manager.CurrentManager.TransportTaskWorker = new TransportTask(workerSuppliers, workerConsumers);
 
 #if MYDEBUG
             Debug.DebugStrategy.TimeAfterTM = MyStrategy.watch.ElapsedMilliseconds - Debug.DebugStrategy.TimeAfterTM;
