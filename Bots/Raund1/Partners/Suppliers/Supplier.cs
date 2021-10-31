@@ -11,6 +11,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
         {
         }
 
-        public virtual int CalculateCost(Consumer consumer) => (int)Manager.CurrentManager.PlanetDetails[consumer.PlanetId].getTransportCost(PlanetId, Delay);
+        public virtual int CalculateCost(Consumer consumer)
+            => Resource.HasValue ? 0 : (int)Manager.CurrentManager.PlanetDetails[consumer.PlanetId].getTransportCost(PlanetId, Delay);
     }
 }

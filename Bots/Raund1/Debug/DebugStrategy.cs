@@ -57,8 +57,8 @@ namespace SpbAiChamp.Bots.Raund1.Debug
             Console.WriteLine(">>>  Resources:");
             foreach (var rd in Manager.CurrentManager.ResourceDetails)
             {
-                Console.WriteLine("  {0}: {1}({2}/{3}) numbers, manufacturer {4}",
-                    rd.Key, rd.Value.Number, rd.Value.NumberIn, rd.Value.NumberOut,
+                Console.WriteLine("  {0}: {1}({2}/{3}){4} numbers, manufacturer {5}",
+                    rd.Key, rd.Value.Number, rd.Value.NumberIn, rd.Value.NumberOut, rd.Value.NumberInit,
                     rd.Value.BuildingType);
             }
 
@@ -98,9 +98,10 @@ namespace SpbAiChamp.Bots.Raund1.Debug
                 {
                     var consumer = tc.Consumers[j];
                     Console.WriteLine(
-                        string.Format("    <<== Id {0}{1} to {2} planet {3}: need {4} {5} delivery {6} by price {7}",
-                            consumer.Id, consumer is SupplierConsumer ? ((consumer as SupplierConsumer).Supplier == null ? string.Empty : "(" + (consumer as SupplierConsumer).Supplier.Id + ")") : string.Empty,
-                            consumer.PlanetId, consumer.GetType().Name, consumer.Quantity, consumer.Resource.HasValue ? consumer.Resource : "workers",
+                        string.Format("    <<== Id {0}{1} to {2}{3} planet {4}: need {5} {6} delivery {7} by price {8}",
+                            consumer.Id, consumer is SupplierConsumer ? ((consumer as SupplierConsumer).ShippingPlan == null ? string.Empty : "(" + (consumer as SupplierConsumer).ShippingPlan.SupplierId + ")") : string.Empty,
+                            consumer.PlanetId, consumer.PlanetId == supplier.PlanetId ? string.Empty : ("(" + Manager.CurrentManager.PlanetDetails[consumer.PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId) + ")"),
+                            consumer.GetType().Name, consumer.Quantity, consumer.Resource.HasValue ? consumer.Resource : "workers",
                             tc.ShippingPlans[i, j].Number, tc.ShippingPlans[i, j].Cost
                     ));
                     if (consumer is BuildingConsumer && !(consumer is EnemyConsumer) && consumer.Resource.HasValue && consumer.Resource.Value == Resource.Stone)

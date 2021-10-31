@@ -48,19 +48,19 @@ namespace SpbAiChamp.Bots.Raund1
 
             foreach (var resourceDetail in Manager.CurrentManager.ResourceDetails)
             {
-                var transportTask = Manager.CurrentManager.TransportTasks[resourceDetail.Key];
-                transportTask = new TransportTask(suppliers.Where(_ => _.Resource == resourceDetail.Key).ToList(),
-                                                   consumers.Where(_ => _.Resource == resourceDetail.Key).ToList());
+                Manager.CurrentManager.TransportTasks[resourceDetail.Key] = new TransportTask(
+                    suppliers.Where(_ => _.Resource == resourceDetail.Key).ToList(),
+                    consumers.Where(_ => _.Resource == resourceDetail.Key).ToList());
 
-                foreach (var shippingPlan in transportTask.ShippingPlans)
+                foreach (var shippingPlan in Manager.CurrentManager.TransportTasks[resourceDetail.Key].ShippingPlans)
                     if (!shippingPlan.Supplier.IsFake && !shippingPlan.Consumer.IsFake && shippingPlan.Number > 0)
                         workerConsumers.Add(new LaborConsumer(shippingPlan));
             }
 
             // Normalize
             var number = workerSuppliers.Sum(_ => _.Number) - workerConsumers.Sum(_ => _.Number);
-            if (number > 0) consumers.Add(new DummyConsumer(number));
-            else if (number < 0) suppliers.Add(new DummySupplier(-number));
+            if (number > 0) workerConsumers.Add(new DummyConsumer(number));
+            else if (number < 0) workerSuppliers.Add(new DummySupplier(-number));
 
             // And For workers
             Manager.CurrentManager.TransportTaskWorker = new TransportTask(workerSuppliers, workerConsumers);

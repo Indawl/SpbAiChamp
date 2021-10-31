@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
+using SpbAiChamp.Bots.Raund1.Logistics;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class DummyConsumer : SupplierConsumer
     {
-        public DummyConsumer(int number, Resource? resource = null, Supplier supplier = null) : 
-            base(0, number, resource, 0, supplier)
+        public DummyConsumer(int number, Resource? resource = null, ShippingPlan shippingPlan = null) : 
+            base(0, number, resource, 0, shippingPlan)
         {
             IsFake = true;
         }

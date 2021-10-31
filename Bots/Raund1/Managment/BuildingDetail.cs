@@ -14,13 +14,13 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             BuildingProperties = buildingProperties;
         }
 
-        public static double GetCost(int planetId = 0, BuildingType buildingType = BuildingType.Replicator)
+        public static double GetCost(int planetId = 0, BuildingType buildingType = BuildingType.Replicator, bool invert = false, bool proportionately = false)
         {
             var buildingDetail = Manager.CurrentManager.BuildingDetails[buildingType];
 
             if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
-                return Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].GetCost(planetId);
-            else return Manager.CurrentManager.BuildingDetails[BuildingType.Replicator].BuildingProperties.ProduceScore * ResourceDetail.SCORE_SCALE;
+                return Manager.CurrentManager.ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].GetCost(planetId, invert, proportionately);
+            else return 1.0;
         }
     }
 }

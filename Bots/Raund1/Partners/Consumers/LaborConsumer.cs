@@ -1,30 +1,17 @@
 ﻿using SpbAiChamp.Bots.Raund1.Logistics;
-using SpbAiChamp.Bots.Raund1.Managment;
-using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class LaborConsumer : SupplierConsumer
     {
         public LaborConsumer(ShippingPlan shippingPlan) : 
-            base(shippingPlan.Supplier.PlanetId, shippingPlan.Number, null, shippingPlan.Supplier.Delay, shippingPlan.Supplier)
+            base(shippingPlan.Supplier.PlanetId, shippingPlan.Number, null, shippingPlan.Supplier.Delay, shippingPlan)
         {
         }
 
-        public LaborConsumer(int planetId, int number, int delay = 0, Supplier supplier = null) :
-            base(planetId, number, null, delay, supplier)
+        public LaborConsumer(int planetId, int number, int delay = 0, ShippingPlan shippingPlan = null) :
+            base(planetId, number, null, delay, shippingPlan)
         {
-        }
-
-        public override int CalculateCost(Supplier supplier)
-        {
-            double cost = base.CalculateCost(supplier);
-
-            var building = Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building;
-            if (building.HasValue)
-                cost += BuildingDetail.GetCost(PlanetId, building.Value.BuildingType);
-
-            return ToInt(cost);
         }
     }
 }

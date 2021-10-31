@@ -1,56 +1,32 @@
 ﻿using System.Collections.Generic;
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
-using SpbAiChamp.Bots.Raund1.Managment;
+using SpbAiChamp.Bots.Raund1.Logistics;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class SupplierConsumer : Consumer
     {
-        public Supplier Supplier { get; protected set; }
+        public ShippingPlan ShippingPlan { get; protected set; }
 
-        public SupplierConsumer(int planetId, int number, Resource? resource = null, int delay = 0, Supplier supplier = null) :
+        public SupplierConsumer(int planetId, int number, Resource? resource = null, int delay = 0, ShippingPlan shippingPlan = null) :
             base(planetId, number, resource, delay)
         {
-            Supplier = supplier;
+            ShippingPlan = shippingPlan;
         }
 
         public override void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
             base.GetAction(supplier, number, moveActions, buildingActions);
 
-            if (Supplier == null) return;
-
-            var transportTask = Manager.CurrentManager.TransportTask(Supplier.Resource);
-
-            int supplierId = transportTask.Suppliers.IndexOf(Supplier);
-
-            for (int j = 0; j < transportTask.Consumers.Count; j++)
-                transportTask.ShippingPlans[supplierId, j].GetAction(moveActions, buildingActions);
+            ShippingPlan?.GetAction(moveActions, buildingActions);
         }
 
         public override int CalculateCost(Supplier supplier)
         {
-            double cost = 0;
+            if (ShippingPlan == null) return ToInt((double)base.CalculateCost(supplier) * supplier.CalculateCost(this));
 
-            if (Supplier != null)
-            {
-                var transportTask = Manager.CurrentManager.TransportTask(Supplier.Resource);
-
-                int supplierId = transportTask.Suppliers.IndexOf(Supplier);
-                int count = 0;
-
-                for (int j = 0; j < transportTask.Consumers.Count; j++)
-                    if (!transportTask.ShippingPlans[supplierId, j].Consumer.IsFake && transportTask.ShippingPlans[supplierId, j].Cost < int.MaxValue)
-                    {
-                        cost += transportTask.ShippingPlans[supplierId, j].Cost;
-                        count++;
-                    }
-                if (count == 0) return int.MaxValue;
-                else cost /= count;
-            }
-
-            return ToInt(cost + base.CalculateCost(supplier));
+            return ToInt(ShippingPlan.CalculateCost() * ShippingPlan.Supplier.CalculateCost(ShippingPlan.Consumer) + supplier.CalculateCost(this));
         }
     }
 }
