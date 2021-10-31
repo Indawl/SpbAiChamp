@@ -53,7 +53,7 @@ namespace SpbAiChamp.Bots.Raund1
                     consumers.Where(_ => _.Resource == resourceDetail.Key).ToList());
 
                 foreach (var shippingPlan in Manager.CurrentManager.TransportTasks[resourceDetail.Key].ShippingPlans)
-                    if (!shippingPlan.Supplier.IsFake && !shippingPlan.Consumer.IsFake && shippingPlan.Number > 0)
+                    if (!shippingPlan.Supplier.IsFake && shippingPlan.Number > 0)
                         workerConsumers.Add(new LaborConsumer(shippingPlan));
             }
 

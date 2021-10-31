@@ -22,11 +22,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
             ShippingPlan?.GetAction(moveActions, buildingActions);
         }
 
-        public override int CalculateCost(Supplier supplier)
-        {
-            if (ShippingPlan == null) return ToInt((double)base.CalculateCost(supplier) * supplier.CalculateCost(this));
-
-            return ToInt(ShippingPlan.CalculateCost() * ShippingPlan.Supplier.CalculateCost(ShippingPlan.Consumer) + supplier.CalculateCost(this));
-        }
+        public override int CalculateCost(Supplier supplier) => ToInt(base.CalculateCost(supplier) + (ShippingPlan?.CalculateCost() ?? 0));
     }
 }

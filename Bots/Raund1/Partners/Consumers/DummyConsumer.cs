@@ -7,7 +7,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
     public class DummyConsumer : SupplierConsumer
     {
-        public DummyConsumer(int number, Resource? resource = null, ShippingPlan shippingPlan = null) : 
+        public DummyConsumer(int number = 0, Resource? resource = null, ShippingPlan shippingPlan = null) : 
             base(0, number, resource, 0, shippingPlan)
         {
             IsFake = true;

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using SpbAiChamp.Model;
 
 namespace SpbAiChamp.Bots.Raund1.Managment
@@ -29,29 +30,33 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         public double GetCost(int planetId, bool invert = false, bool proportionately = false)
         {
-            double k = 1;
+            double k = 1.0;
 
             if (proportionately)
             {
-                var order = Manager.CurrentManager.Orders[planetId];
-                var full = order.Resources.Values.Sum();
-
-                k += (double)order.Resources[Resource] / full;
+                if (Manager.CurrentManager.Orders[planetId].Resources.TryGetValue(Resource, out var full))
+                    if (Manager.CurrentManager.PlanetDetails[planetId].Planet.Resources.TryGetValue(Resource, out var have))
+                    {
+                        have = Math.Min(have, full);
+                        if (full != have) k *= (double)full / (full - have);
+                        else return int.MaxValue;
+                    }
             }
 
-            if (NumberOut != 0 && NumberIn != 0)
+            if (NumberIn != 0 || NumberOut != 0)
             {
-                if (NumberInit != 0) k /= NumberInit;
-                if (invert) k *= NumberIn / NumberOut;
-                else k *= NumberOut / NumberIn;
+                if (NumberInit == 0)
+                {
+                    if (NumberIn == 0) return int.MaxValue;
+                    if (NumberOut == 0) return 0;
+                    k *= NumberIn / NumberOut;
+                } 
+                else if (invert) k *= NumberIn / NumberInit;
+                else k *= NumberOut / NumberInit;
             }
-            //else if (invert && NumberIn != 0 || !invert && NumberOut != 0) return int.MaxValue;
-            //else if (!invert && NumberIn != 0 || invert && NumberOut != 0) return 0;
 
             var buildingDetail = Manager.CurrentManager.BuildingDetails[BuildingType];
-            k *= (double)Score / buildingDetail.BuildingProperties.ProduceAmount;
-
-            return k > int.MaxValue ? int.MaxValue : k;
+            return k * Score / buildingDetail.BuildingProperties.ProduceAmount;
         }
     }
 }

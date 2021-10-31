@@ -10,7 +10,5 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
         {
             IsFake = true;
         }
-
-        public override int CalculateCost(Consumer consumer) => Resource.HasValue ? 1 : int.MaxValue;
     }
 }

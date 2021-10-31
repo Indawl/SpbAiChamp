@@ -62,6 +62,17 @@ namespace SpbAiChamp.Bots.Raund1.Debug
                     rd.Value.BuildingType);
             }
 
+            Console.WriteLine(">>>  Orders:");
+            foreach (var order in Manager.CurrentManager.Orders.Values.Where(_ => _.Resources.Count > 0 || _.Number > 0))
+            {
+                Console.Write("  Planet {0}:{1}{2}", order.PlanetId,
+                    order.BuildingType.HasValue ? string.Format(" need {0}", order.BuildingType.Value) : string.Empty,
+                    order.Number > 0 ? string.Format(" {0} workers", order.Number) : string.Empty);
+                foreach (var res in order.Resources)
+                    Console.Write(" {0} {1}", res.Value, res.Key);
+                Console.WriteLine();
+            }
+
             PrintTransporTask(Manager.CurrentManager.TransportTaskWorker);
             foreach (var tc in Manager.CurrentManager.TransportTasks.Values)
                 PrintTransporTask(tc);

@@ -11,7 +11,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         {
         }
 
-        public override int CalculateCost(Supplier supplier)
-            => ToInt(BuildingDetail.GetCost(PlanetId, Manager.CurrentManager.ResourceDetails[Resource.Value].BuildingType, true, true));
+        public override int CalculateCost(Supplier supplier) => CalculateCostExt(supplier, true, true);
     }
 }

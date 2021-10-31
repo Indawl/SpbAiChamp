@@ -21,13 +21,17 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
                 number, supplier.Resource));
         }
 
-        public virtual int CalculateCost(Supplier supplier)
-        {
-            var building = Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building;
-            var order = Manager.CurrentManager.Orders[PlanetId];
-            var buildingType = order.BuildingType.HasValue ? order.BuildingType.Value : building?.BuildingType ?? BuildingType.Replicator;
+        public virtual int CalculateCost(Supplier supplier) => CalculateCostExt(supplier);
 
-            return ToInt(BuildingDetail.GetCost(PlanetId, buildingType));
+        protected int CalculateCostExt(Supplier supplier, bool invert = false, bool proportionately = false)
+        {
+            if (supplier.IsFake) return new DummyConsumer().CalculateCost(supplier);
+
+            var building = Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building;
+            double cost = BuildingDetail.GetCost(PlanetId, building.HasValue ? building.Value.BuildingType
+                                                                             : Manager.CurrentManager.Orders[PlanetId].BuildingType,
+                                                 invert, proportionately);
+            return ToInt(cost * supplier.CalculateCost(this));
         }
 
         protected int ToInt(double value) => value > int.MaxValue ? int.MaxValue : (int)value;

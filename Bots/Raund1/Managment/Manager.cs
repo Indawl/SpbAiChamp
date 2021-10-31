@@ -241,10 +241,12 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             var buildingDetail = BuildingDetails[buildingType];
 
             foreach (var planetDetail in PlanetDetails.Values
-                .Where(_ => MyPlanets.ContainsKey(_.Planet.Id)
-                         && !_.Planet.Building.HasValue
-                         && !Orders[_.Planet.Id].BuildingType.HasValue))
+                .Where(_ => MyPlanets.ContainsKey(_.Planet.Id) && !Orders[_.Planet.Id].BuildingType.HasValue))
             {
+                if (planetDetail.Planet.Building.HasValue && planetDetail.Planet.Building.Value.BuildingType == buildingType &&
+                    planetDetail.Planet.Building.Value.Health < BuildingDetails[planetDetail.Planet.Building.Value.BuildingType].BuildingProperties.MaxHealth)
+                    return planetDetail.Planet.Id;
+
                 // If harvest, then only harvest
                 if (buildingDetail.BuildingProperties.Harvest)
                 {
@@ -314,33 +316,26 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             // Add resources
             if (planetDetail.Influence >= 0)
                 foreach (var resource in planetDetail.Planet.Resources)
-                    GetPartners(suppliers, consumers, planetDetail.Planet.Id, resource.Key, resource.Value);
+                    suppliers.Add(new WarehouseSupplier(planetDetail.Planet.Id, resource.Value, resource.Key));
 
             // Add needs from order
             var order = Orders[planetDetail.Planet.Id];
             if (order.Number > 0)
-                consumers.Add(new LaborConsumer(order.PlanetId, order.Number, order.Delay));
+                consumers.Add(new LaborConsumer(order.PlanetId, order.Number, planetDetail.Planet.Building?.BuildingType ?? order.BuildingType, order.Delay));
 
             foreach (var resource in Orders[planetDetail.Planet.Id].Resources)
                 if (order.BuildingType.HasValue && resource.Key == Resource.Stone)
-                    consumers.Add(new BuildingConsumer(order.PlanetId, resource.Value, order.BuildingType.Value, resource.Key));
+                    consumers.Add(new BuildingConsumer(order.PlanetId, resource.Value, resource.Key, order.BuildingType.Value));
                 else
                     consumers.Add(new ResourceConsumer(order.PlanetId, resource.Value, resource.Key));
-        }
-
-        private void GetPartners(List<Supplier> suppliers, List<Consumer> consumers, int planetId, Resource resource, int number, int delay = 0)
-        {
-            var warehouseSupplier = new WarehouseSupplier(planetId, number, resource, delay);
-            suppliers.Add(warehouseSupplier);
-            //consumers.Add(new LaborConsumer(planetId, number, delay, warehouseSupplier));
         }
 
         private void GetPartners(List<Supplier> suppliers, List<Consumer> consumers, FlyingWorkerGroup flyingWorkerGroups)
         {
             // Add resource with delay
-            if (flyingWorkerGroups.Resource.HasValue)
-                GetPartners(suppliers, consumers, flyingWorkerGroups.NextPlanet, flyingWorkerGroups.Resource.Value, flyingWorkerGroups.Number,
-                                                  flyingWorkerGroups.NextPlanetArrivalTick - Game.CurrentTick);
+            if (flyingWorkerGroups.Resource.HasValue && flyingWorkerGroups.PlayerIndex == Game.MyIndex)
+                suppliers.Add(new WarehouseSupplier(flyingWorkerGroups.NextPlanet, flyingWorkerGroups.Number, flyingWorkerGroups.Resource.Value,
+                                                    flyingWorkerGroups.NextPlanetArrivalTick - Game.CurrentTick));
 
             // Add workers with delay
             if (flyingWorkerGroups.PlayerIndex == Game.MyIndex)
@@ -352,7 +347,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public void NormalizePartners(List<Supplier> suppliers, List<Consumer> consumers)
         {
             Dictionary<Resource, int> resources = new Dictionary<Resource, int>();
-            //int number = 0;
 
             // Get all suppliers quotation
             foreach (Supplier supplier in suppliers)
@@ -363,7 +357,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                     else
                         resources.Add(supplier.Resource.Value, supplier.Number);
                 }
-                //else number += supplier.Number;
 
             // Get all consumers needs
             foreach (Consumer consumer in consumers)
@@ -374,7 +367,6 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                     else
                         resources.Add(consumer.Resource.Value, -consumer.Number);
                 }
-                //else number -= consumer.Number;
 
             // Add dummy partners
             foreach (var resource in resources)
@@ -384,15 +376,7 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 {
                     var supplier = new DummySupplier(-resource.Value, resource.Key);
                     suppliers.Add(supplier);
-                    //consumers.Add(new DummyConsumer(-resource.Value, null, supplier));
-                    //number += resource.Value; // For Dummy consumers
                 }
-
-            // And dummy workers
-            //if (number > 0)
-            //    consumers.Add(new DummyConsumer(number));
-            //else if (number < 0)
-            //    suppliers.Add(new DummySupplier(-number));
         }
     }
 }

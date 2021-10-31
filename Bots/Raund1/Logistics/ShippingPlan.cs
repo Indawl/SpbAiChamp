@@ -35,13 +35,12 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            if (Supplier.IsFake || Consumer.IsFake) return;
-            if (Number == 0 || Cost >= MaxCost) return;
+            if (Supplier.IsFake ||  Number <= 0 || Cost >= MaxCost) return;
 
             Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }
 
-        public int CalculateCost() => Supplier.IsFake ? Supplier.CalculateCost(Consumer) : Consumer.CalculateCost(Supplier);
+        public int CalculateCost() => Consumer.CalculateCost(Supplier);
 
         public override string ToString() => string.Format("{0} -> {1}: {2} {3}", SupplierId, ConsumerId, Cost, Consumer);
     }

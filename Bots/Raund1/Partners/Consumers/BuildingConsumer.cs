@@ -5,14 +5,15 @@ using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
-    public class BuildingConsumer : Consumer
+    public class BuildingConsumer : LaborConsumer
     {
         public BuildingType BuildingType { get; protected set; }
 
-        public BuildingConsumer(int planetId, int number, BuildingType buildingType, Resource resource) :
-            base(planetId, number, resource)
+        public BuildingConsumer(int planetId, int number, Resource resource, BuildingType buildingType) :
+            base(planetId, number, buildingType)
         {
             BuildingType = buildingType;
+            Resource = resource;
         }
 
         public override string ToString() => BuildingType.ToString() + base.ToString();
