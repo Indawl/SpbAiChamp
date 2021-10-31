@@ -78,7 +78,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
             for (int i = 0; i < Suppliers.Count; i++)
                 for (int j = 0; j < Consumers.Count; j++)
                     ShippingPlans[i, j] = new ShippingPlan(i, j, Suppliers[i], Consumers[j]);
-         }
+          }
 
         private void CreateInitialPlan()
         {

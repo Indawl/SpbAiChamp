@@ -2,6 +2,7 @@
 using SpbAiChamp.Model;
 using SpbAiChamp.Bots.Raund1.Partners.Suppliers;
 using SpbAiChamp.Bots.Raund1.Logistics;
+using SpbAiChamp.Bots.Raund1.Managment;
 
 namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 {
@@ -17,11 +18,31 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
         public override void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            base.GetAction(supplier, number, moveActions, buildingActions);
-
-            ShippingPlan?.GetAction(moveActions, buildingActions);
+            if (supplier.PlanetId != PlanetId && supplier.Delay == 0)
+            {
+                moveActions.Add(new MoveAction(supplier.PlanetId,
+                    Manager.CurrentManager.PlanetDetails[PlanetId].ShortestWay.GetNextPlanetInv(supplier.PlanetId),
+                    number, supplier.Resource));
+            }
+            else ShippingPlan?.GetAction(moveActions, buildingActions);
         }
 
-        public override int CalculateCost(Supplier supplier) => ToInt(base.CalculateCost(supplier) + (ShippingPlan?.CalculateCost() ?? 0));
+        public override int CalculateCost(Supplier supplier)
+        {
+            if (supplier.IsFake) return ToInt(supplier.CalculateCost(this));
+
+            if (ShippingPlan == null) return base.CalculateCost(supplier);            
+            return ToInt(supplier.CalculateCost(this) + ShippingPlan.Cost);
+
+            //double cost = supplier.CalculateCost(this)
+            //            + ShippingPlan.Supplier.CalculateCost(ShippingPlan.Consumer);
+            //cost *= ShippingPlan.Consumer.CalculateCost(ShippingPlan.Supplier)
+            //      * (Manager.CurrentManager.BuildingDetails[BuildingType.Replicator].BuildingProperties.ProduceScore + 1 -
+            //          Manager.CurrentManager.BuildingDetails[ShippingPlan.Supplier.Resource.HasValue
+            //      ? Manager.CurrentManager.ResourceDetails[ShippingPlan.Supplier.Resource.Value].BuildingType
+            //      : BuildingType.Replicator].BuildingProperties.ProduceScore);
+
+            //return ToInt(cost);
+        }
     }
 }

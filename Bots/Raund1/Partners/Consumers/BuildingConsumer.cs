@@ -10,7 +10,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         public BuildingType BuildingType { get; protected set; }
 
         public BuildingConsumer(int planetId, int number, Resource resource, BuildingType buildingType) :
-            base(planetId, number, buildingType)
+            base(planetId, number)
         {
             BuildingType = buildingType;
             Resource = resource;

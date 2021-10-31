@@ -11,6 +11,15 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         {
         }
 
-        public override int CalculateCost(Supplier supplier) => CalculateCostExt(supplier, true, true);
+        public override int CalculateCost(Supplier supplier)
+        {
+            if (supplier.IsFake) return ToInt(supplier.CalculateCost(this));
+
+            var building = Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Building;
+            double cost = BuildingDetail.GetCost(building.HasValue ? building.Value.BuildingType
+                                                                   : Manager.CurrentManager.Orders[PlanetId].BuildingType,
+                                                 true);
+            return ToInt(cost * supplier.CalculateCost(this));
+        }
     }
 }

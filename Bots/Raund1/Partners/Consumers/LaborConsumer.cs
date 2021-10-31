@@ -11,11 +11,9 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
         {            
         }
 
-        public LaborConsumer(int planetId, int number, BuildingType? buildingType, int delay = 0) :
+        public LaborConsumer(int planetId, int number, int delay = 0) :
             base(planetId, number, null, delay, null)
         {
-            if (buildingType.HasValue)
-                Resource = Manager.CurrentManager.BuildingDetails[buildingType.Value].BuildingProperties.ProduceResource;
         }
     }
 }

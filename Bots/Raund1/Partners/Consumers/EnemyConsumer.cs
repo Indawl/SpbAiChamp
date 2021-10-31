@@ -12,6 +12,8 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
         public override int CalculateCost(Supplier supplier)
         {
+            if (supplier.IsFake) return ToInt(supplier.CalculateCost(this));
+
             return int.MaxValue;
             double cost = 0;
 
@@ -25,7 +27,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
             if (Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources.Count > 0)
                 foreach (var resource in Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources)
-                    cost += Math.Max(cost, resource.Value * Manager.CurrentManager.ResourceDetails[resource.Key].GetCost(PlanetId))
+                    cost += Math.Max(cost, resource.Value * Manager.CurrentManager.ResourceDetails[resource.Key].GetCost())
                           / Manager.CurrentManager.PlanetDetails[PlanetId].Planet.Resources.Count;
 
             if (Manager.CurrentManager.PlanetDetails[PlanetId].Influence < 0)

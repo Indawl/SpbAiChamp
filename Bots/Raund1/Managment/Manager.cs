@@ -102,15 +102,16 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 var planetDetail = new PlanetDetail(planet);
                 PlanetDetails.Add(planet.Id, planetDetail);
 
-                if (planet.Building.HasValue)
-                    BuildingDetails[planet.Building.Value.BuildingType].Planets.Add(planet.Id);
-
                 if (!Orders.ContainsKey(planet.Id))
                     Orders[planet.Id] = new Order(planet.Id);
             }
 
             // Division territory
             DivisionTerritory();
+
+            foreach (var planetDetail in PlanetDetails.Values)
+                if (planetDetail.Planet.Building.HasValue && planetDetail.Influence >= 0)
+                    BuildingDetails[planetDetail.Planet.Building.Value.BuildingType].Planets.Add(planetDetail.Planet.Id);
 
             // Get my planets
             MyPlanets = new Dictionary<int, PlanetDetail>();
@@ -122,29 +123,31 @@ namespace SpbAiChamp.Bots.Raund1.Managment
                 if (planetDetail.Planet.Building.HasValue)
                 {
                     var buildingDetail = BuildingDetails[planetDetail.Planet.Building.Value.BuildingType];
-                    var efficiency = planetDetail.Planet.Building.Value.Health < buildingDetail.BuildingProperties.MaxHealth ? 0 :
-                        (double)Math.Min(buildingDetail.BuildingProperties.MaxWorkers, planetDetail.WorkerCount)
-                                       / buildingDetail.BuildingProperties.MaxWorkers;
+
+                    planetDetail.TaskCount = Math.Min(buildingDetail.BuildingProperties.MaxWorkers, planetDetail.WorkerCount)
+                                           / buildingDetail.BuildingProperties.WorkAmount;
 
                     foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
-                        ResourceDetails[resource.Key].NumberIn += efficiency * resource.Value;
+                        if (planetDetail.TaskCount > 0) planetDetail.TaskCount = Math.Min(planetDetail.TaskCount, resource.Value / planetDetail.TaskCount);
 
-                    if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
-                        ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].NumberOut += efficiency * buildingDetail.BuildingProperties.ProduceAmount;
+                    if (planetDetail.TaskCount > 0)
+                        if (buildingDetail.BuildingProperties.WorkResources.Count > 0)
+                            foreach (var resource in buildingDetail.BuildingProperties.WorkResources)
+                            {
+                                ResourceDetails[resource.Key].NumberIn += resource.Value * planetDetail.TaskCount;
+                                if (buildingDetail.BuildingProperties.ProduceResource.HasValue)
+                                    ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].NumberOut += buildingDetail.BuildingProperties.ProduceAmount * planetDetail.TaskCount;
+                            }
+                        else
+                            ResourceDetails[buildingDetail.BuildingProperties.ProduceResource.Value].NumberOut += buildingDetail.BuildingProperties.ProduceAmount * planetDetail.TaskCount;
+
+                    planetDetail.Efficiency = (double)planetDetail.TaskCount * buildingDetail.BuildingProperties.WorkAmount / buildingDetail.BuildingProperties.MaxWorkers;
                 }
             }
 
             foreach (var resourceDetail in ResourceDetails.Values)
-            {
-                var buildingDetail = BuildingDetails[resourceDetail.BuildingType];
-                double number = (double)buildingDetail.BuildingProperties.MaxWorkers / buildingDetail.BuildingProperties.WorkAmount;
-
-                resourceDetail.NumberIn = (int)(number * resourceDetail.NumberIn);
-                resourceDetail.NumberOut = (int)(number * resourceDetail.NumberOut);
-
                 resourceDetail.Number = PlanetDetails.Values.Sum(_ => (_.Influence >= 0 &&
                     _.Planet.Resources.ContainsKey(resourceDetail.Resource)) ? _.Planet.Resources[resourceDetail.Resource] : 0);
-            }
 
             foreach (var flyingWorkerGroups in Game.FlyingWorkerGroups.Where(_ => _.PlayerIndex == Game.MyIndex && _.Resource.HasValue))
                 ResourceDetails[flyingWorkerGroups.Resource.Value].Number += flyingWorkerGroups.Number;
@@ -241,11 +244,13 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             var buildingDetail = BuildingDetails[buildingType];
 
             foreach (var planetDetail in PlanetDetails.Values
-                .Where(_ => MyPlanets.ContainsKey(_.Planet.Id) && !Orders[_.Planet.Id].BuildingType.HasValue))
+                .Where(_ => !_.Planet.Building.HasValue && MyPlanets.ContainsKey(_.Planet.Id) && !Orders[_.Planet.Id].BuildingType.HasValue))
             {
                 if (planetDetail.Planet.Building.HasValue && planetDetail.Planet.Building.Value.BuildingType == buildingType &&
                     planetDetail.Planet.Building.Value.Health < BuildingDetails[planetDetail.Planet.Building.Value.BuildingType].BuildingProperties.MaxHealth)
                     return planetDetail.Planet.Id;
+
+                if (buildingDetail.Planets.Exists(_ => PlanetDetails[_].Efficiency < 0.5)) continue;
 
                 // If harvest, then only harvest
                 if (buildingDetail.BuildingProperties.Harvest)
@@ -307,6 +312,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         private void GetPartners(List<Supplier> suppliers, List<Consumer> consumers, PlanetDetail planetDetail)
         {
+            var order = Orders[planetDetail.Planet.Id];
+
             // Add workers
             if (planetDetail.WorkerCount > 0)
                 suppliers.Add(new LaborSupplier(planetDetail.Planet.Id, planetDetail.WorkerCount));
@@ -316,18 +323,31 @@ namespace SpbAiChamp.Bots.Raund1.Managment
             // Add resources
             if (planetDetail.Influence >= 0)
                 foreach (var resource in planetDetail.Planet.Resources)
-                    suppliers.Add(new WarehouseSupplier(planetDetail.Planet.Id, resource.Value, resource.Key));
+                {
+                    int value = resource.Value;
+
+                    if (order.Resources.ContainsKey(resource.Key) && resource.Key != Resource.Stone)
+                        value -= order.Resources[resource.Key];
+
+                    if (value > 0) suppliers.Add(new WarehouseSupplier(planetDetail.Planet.Id, value, resource.Key));
+                }
 
             // Add needs from order
-            var order = Orders[planetDetail.Planet.Id];
             if (order.Number > 0)
-                consumers.Add(new LaborConsumer(order.PlanetId, order.Number, planetDetail.Planet.Building?.BuildingType ?? order.BuildingType, order.Delay));
+                consumers.Add(new LaborConsumer(order.PlanetId, order.Number, order.Delay));
 
             foreach (var resource in Orders[planetDetail.Planet.Id].Resources)
+            {
+                int value = resource.Value;
+
+                if (planetDetail.Planet.Resources.ContainsKey(resource.Key) && resource.Key != Resource.Stone)
+                    value -= planetDetail.Planet.Resources[resource.Key];
+
                 if (order.BuildingType.HasValue && resource.Key == Resource.Stone)
-                    consumers.Add(new BuildingConsumer(order.PlanetId, resource.Value, resource.Key, order.BuildingType.Value));
-                else
-                    consumers.Add(new ResourceConsumer(order.PlanetId, resource.Value, resource.Key));
+                    consumers.Add(new BuildingConsumer(order.PlanetId, value, resource.Key, order.BuildingType.Value));
+                else if (value > 0)
+                    consumers.Add(new ResourceConsumer(order.PlanetId, value, resource.Key));
+            }
         }
 
         private void GetPartners(List<Supplier> suppliers, List<Consumer> consumers, FlyingWorkerGroup flyingWorkerGroups)

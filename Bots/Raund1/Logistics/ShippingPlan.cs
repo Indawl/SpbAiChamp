@@ -22,7 +22,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
         public bool Processed { get; set; }
         public bool Visited { get; set; }
         public bool? Direction { get; set; }
-        public ShippingPlan FromShipping { get; set; }        
+        public ShippingPlan FromShipping { get; set; }
         #endregion
 
         public ShippingPlan(int supplierId, int consumerId, Supplier supplier, Consumer consumer) : base(supplier, consumer)
@@ -35,7 +35,7 @@ namespace SpbAiChamp.Bots.Raund1.Logistics
 
         public void GetAction(List<MoveAction> moveActions, List<BuildingAction> buildingActions)
         {
-            if (Supplier.IsFake ||  Number <= 0 || Cost >= MaxCost) return;
+            if (Supplier.IsFake || Number <= 0 || Cost >= MaxCost) return;
 
             Consumer.GetAction(Supplier, Number, moveActions, buildingActions);
         }

@@ -57,8 +57,8 @@ namespace SpbAiChamp.Bots.Raund1.Debug
             Console.WriteLine(">>>  Resources:");
             foreach (var rd in Manager.CurrentManager.ResourceDetails)
             {
-                Console.WriteLine("  {0}: {1}({2}/{3}){4} numbers, manufacturer {5}",
-                    rd.Key, rd.Value.Number, rd.Value.NumberIn, rd.Value.NumberOut, rd.Value.NumberInit,
+                Console.WriteLine("  {0}: {1}({2}/{3}){4} numbers, manufacturer {5} by {6}",
+                    rd.Key, rd.Value.Number, rd.Value.NumberIn, rd.Value.NumberOut, rd.Value.NumberInit, Manager.CurrentManager.ResourceDetails[rd.Key].GetCost(),
                     rd.Value.BuildingType);
             }
 

@@ -15,6 +15,6 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Consumers
 
         public override void GetAction(Supplier supplier, int number, List<MoveAction> moveActions, List<BuildingAction> buildingActions) { }
 
-        public override int CalculateCost(Supplier supplier) => Resource.HasValue ? 1 : int.MaxValue;
+        public override int CalculateCost(Supplier supplier) => int.MaxValue;
     }
 }

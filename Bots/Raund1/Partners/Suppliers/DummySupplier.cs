@@ -10,5 +10,7 @@ namespace SpbAiChamp.Bots.Raund1.Partners.Suppliers
         {
             IsFake = true;
         }
+
+        public override double CalculateCost(Consumer consumer) => 1;
     }
 }

@@ -12,6 +12,8 @@ namespace SpbAiChamp.Bots.Raund1.Managment
         public Planet Planet { get; }
         public int WorkerCount { get; } = 0;
         public int Influence { get; set; } = 0;
+        public int TaskCount { get; set; } = 0;
+        public double Efficiency { get; set; } = 0.0;
 
         public ShortestWay ShortestWay => shortestWay == null ? shortestWay = new ShortestWay(Planet) : shortestWay;
         public static int Distance(Planet from, Planet to) => Math.Abs(to.X - from.X) + Math.Abs(to.Y - from.Y);
@@ -25,6 +27,5 @@ namespace SpbAiChamp.Bots.Raund1.Managment
 
         public double getTransportCost(int planetId, int delay) => getTransportCost(ShortestWay.GetRealDistance(planetId) + delay);
         public double getTransportCost(int dist) => Manager.CurrentManager.TransportTax * dist;
-        //public double getTransportCost(int dist) => Manager.CurrentManager.TransportTax * dist * (Influence >= 0 ? 0 : 1);
     }
 }
